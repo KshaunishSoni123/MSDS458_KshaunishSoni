@@ -1,0 +1,60 @@
+prepare_data(): target = 'log_price'
+  numerical   (9): ['log_carat', 'volume', 'density', 'cut', 'color', 'clarity', 'cut/wt', 'color/wt', 'clarity/wt']
+  categorical (0): []
+  output feature columns: 9
+Shared config: {'lr': 0.001, 'batch_size': 64, 'epochs': 100, 'patience': 10, 'batch_norm': True, 'val_size': 0.2, 'seed': 73}
+
+--- A01_1x32: hidden layers [32] (417 parameters) ---
+A01_1x32 [train]  MAE: $355.43  RMSE: $754.27  MAPE: 9.19%  R2: 0.9641  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A01_1x32 [val]  MAE: $368.78  RMSE: $778.69  MAPE: 9.31%  R2: 0.9630  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A02_1x64: hidden layers [64] (833 parameters) ---
+A02_1x64 [train]  MAE: $344.70  RMSE: $661.32  MAPE: 9.04%  R2: 0.9724  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A02_1x64 [val]  MAE: $354.38  RMSE: $681.43  MAPE: 9.08%  R2: 0.9716  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A03_1x128: hidden layers [128] (1,665 parameters) ---
+A03_1x128 [train]  MAE: $331.58  RMSE: $624.51  MAPE: 9.16%  R2: 0.9754  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A03_1x128 [val]  MAE: $337.92  RMSE: $638.44  MAPE: 9.16%  R2: 0.9751  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A04_2_64-32: hidden layers [64, 32] (2,945 parameters) ---
+A04_2_64-32 [train]  MAE: $366.52  RMSE: $689.28  MAPE: 9.55%  R2: 0.9701  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A04_2_64-32 [val]  MAE: $374.61  RMSE: $701.44  MAPE: 9.66%  R2: 0.9699  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A05_2_128-64: hidden layers [128, 64] (9,985 parameters) ---
+A05_2_128-64 [train]  MAE: $401.78  RMSE: $720.99  MAPE: 10.72%  R2: 0.9672  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A05_2_128-64 [val]  MAE: $410.82  RMSE: $721.81  MAPE: 10.99%  R2: 0.9682  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A06_2_256-128: hidden layers [256, 128] (36,353 parameters) ---
+A06_2_256-128 [train]  MAE: $354.70  RMSE: $681.32  MAPE: 9.29%  R2: 0.9707  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A06_2_256-128 [val]  MAE: $367.64  RMSE: $675.27  MAPE: 9.53%  R2: 0.9721  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A07_3_64-64-64: hidden layers [64, 64, 64] (9,409 parameters) ---
+A07_3_64-64-64 [train]  MAE: $469.84  RMSE: $838.07  MAPE: 10.84%  R2: 0.9557  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A07_3_64-64-64 [val]  MAE: $481.21  RMSE: $860.10  MAPE: 10.90%  R2: 0.9548  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A08_3_128-64-32: hidden layers [128, 64, 32] (12,097 parameters) ---
+A08_3_128-64-32 [train]  MAE: $427.58  RMSE: $782.21  MAPE: 9.69%  R2: 0.9614  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A08_3_128-64-32 [val]  MAE: $439.92  RMSE: $809.95  MAPE: 9.81%  R2: 0.9599  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A09_4_256-32: hidden layers [256, 128, 64, 32] (46,785 parameters) ---
+A09_4_256-32 [train]  MAE: $447.85  RMSE: $839.45  MAPE: 10.34%  R2: 0.9556  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A09_4_256-32 [val]  MAE: $464.03  RMSE: $868.39  MAPE: 10.55%  R2: 0.9539  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+
+--- A10_5_512-32: hidden layers [512, 256, 128, 64, 32] (181,697 parameters) ---
+A10_5_512-32 [train]  MAE: $408.31  RMSE: $718.13  MAPE: 10.37%  R2: 0.9675  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+A10_5_512-32 [val]  MAE: $423.47  RMSE: $746.10  MAPE: 10.59%  R2: 0.9660  -> /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/metrics.csv
+  saved /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/architecture_learning_curves.png
+  saved /Users/kshaunishsoni/Documents/Northwestern/458/MSDS458_KshaunishSoni/Assignment1/results/architecture_val_rmse.png
+
+Architecture comparison (sorted by validation RMSE, USD):
+          model  params  epochs_run  best_epoch  train_time_s  train_RMSE  val_MAE  val_RMSE  val_MAPE  val_R2
+      A03_1x128    1665          38          28          47.0     624.506  337.920   638.440     9.158   0.975
+  A06_2_256-128   36353          25          15          50.4     681.324  367.637   675.269     9.533   0.972
+       A02_1x64     833          55          45          73.3     661.316  354.376   681.427     9.080   0.972
+    A04_2_64-32    2945          27          17          49.3     689.276  374.610   701.436     9.662   0.970
+   A05_2_128-64    9985          17           7          40.1     720.989  410.819   721.811    10.994   0.968
+   A10_5_512-32  181697          18           8          52.0     718.127  423.471   746.096    10.588   0.966
+       A01_1x32     417          44          34          71.5     754.275  368.785   778.686     9.305   0.963
+A08_3_128-64-32   12097          33          23          73.9     782.214  439.921   809.948     9.812   0.960
+ A07_3_64-64-64    9409          19           9          42.5     838.071  481.208   860.103    10.901   0.955
+   A09_4_256-32   46785          14           4          34.8     839.446  464.032   868.392    10.554   0.954
