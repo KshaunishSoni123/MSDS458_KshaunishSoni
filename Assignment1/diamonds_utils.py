@@ -212,6 +212,43 @@ class OutputScale(nn.Module):
         return self.mean + self.scale * z
 
 
+def hidden_activation(name='relu', negative_slope=0.01):
+    """Hidden-layer activation module: 'relu' or 'leaky_relu'."""
+    if name == 'leaky_relu':
+        return nn.LeakyReLU(negative_slope)
+    if name == 'relu':
+        return nn.ReLU()
+    raise ValueError(f"hidden_activation(): unknown activation '{name}'")
+
+
+def init_he_weights(model, activation='relu', negative_slope=0.01):
+    """He (Kaiming) normal initialization for every Linear layer, zero biases.
+
+    The gain matches the hidden activation (for LeakyReLU it accounts for the
+    negative slope), which keeps activation variance stable through deep stacks.
+    """
+    a = negative_slope if activation == 'leaky_relu' else 0.0
+    for m in model.modules():
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight, a=a, nonlinearity=activation)
+            nn.init.zeros_(m.bias)
+    return model
+
+
+def mape_loss(outputs, targets, eps=1e-8):
+    """Mean absolute percentage error (in %) as a differentiable training loss."""
+    return torch.mean(torch.abs((targets - outputs) / torch.clamp(torch.abs(targets), min=eps))) * 100
+
+
+def _make_lr_scheduler(optimizer, lr_factor, lr_patience, min_lr):
+    """Performance scheduling: cut the learning rate by lr_factor when val_loss has not
+    improved for lr_patience epochs. Returns None when lr_factor is None (disabled)."""
+    if lr_factor is None:
+        return None
+    return torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=lr_factor, patience=lr_patience, min_lr=min_lr)
+
+
 class HistoryObject:
     """Per-epoch metrics exposed as a `.history` dict.
 
@@ -246,11 +283,15 @@ def predict(model, X, device=None):
 
 def fit_regression(model, X_train, y_train, X_val, y_val,
                    lr=0.001, epochs=50, batch_size=32, patience=10,
+                   lr_factor=None, lr_patience=5, min_lr=1e-6,
                    device=None, verbose=True):
     """Train a regression model with the standard PyTorch training loop.
 
-    Uses Adam + MSE loss with early stopping and best-weight restore, so the
-    returned model is the best one seen, not the one from the final epoch.
+    Uses Adam + MAPE loss (mean absolute percentage error, in %) with early stopping
+    on validation MAPE and best-weight restore, so the returned model is the best one
+    seen, not the one from the final epoch. Training on MAPE weights every diamond by
+    its relative error, rather than letting expensive stones dominate as MSE does.
+    Optional performance scheduling lowers the learning rate on val_loss plateaus.
 
     Args:
         model (torch.nn.Module): Model to train (modified in place)
@@ -260,11 +301,16 @@ def fit_regression(model, X_train, y_train, X_val, y_val,
         epochs (int): Maximum number of epochs
         batch_size (int): Mini-batch size
         patience (int): Early stopping patience (epochs without val_loss improvement)
+        lr_factor (float): Performance scheduling: multiply the learning rate by this when
+            val_loss plateaus for lr_patience epochs (ReduceLROnPlateau). None disables it.
+            Keep lr_patience below patience so the rate can drop before training stops.
+        lr_patience (int): Epochs without val_loss improvement before cutting the rate
+        min_lr (float): Lower bound for the learning rate
         device: torch device, defaults to best available
         verbose (bool): Print per-epoch metrics
 
     Returns:
-        HistoryObject: per-epoch loss/mae/rmse/mape (+ val_ versions)
+        HistoryObject: per-epoch loss (= MAPE) / mae / rmse / mape (+ val_ versions) and lr
     """
     device = device or _default_device
     model = model.to(device)
@@ -282,14 +328,15 @@ def fit_regression(model, X_train, y_train, X_val, y_val,
         batch_size=batch_size, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.MSELoss()
+    scheduler = _make_lr_scheduler(optimizer, lr_factor, lr_patience, min_lr)
+    criterion = mape_loss
 
     history = {'loss': [], 'mae': [], 'rmse': [], 'mape': [],
-               'val_loss': [], 'val_mae': [], 'val_rmse': [], 'val_mape': []}
+               'val_loss': [], 'val_mae': [], 'val_rmse': [], 'val_mape': [], 'lr': []}
     best_val_loss, patience_counter, best_state = float('inf'), 0, None
 
     def _epoch_metrics(loader, training):
-        total_loss = total_mae = total_mape = 0.0
+        total_loss = total_mae = total_sq = total_mape = 0.0
         n_samples = 0
         for X_batch, y_batch in loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
@@ -308,28 +355,33 @@ def fit_regression(model, X_train, y_train, X_val, y_val,
             batch_size_actual = y_batch.size(0)
             total_loss += loss.item() * batch_size_actual
             total_mae += torch.sum(torch.abs(outputs - y_batch)).item()
+            total_sq += torch.sum((outputs - y_batch) ** 2).item()
             total_mape += torch.sum(torch.abs((y_batch - outputs) / y_batch)).item() * 100
             n_samples += batch_size_actual
-        return total_loss / n_samples, total_mae / n_samples, total_mape / n_samples
+        return (total_loss / n_samples, total_mae / n_samples,
+                np.sqrt(total_sq / n_samples), total_mape / n_samples)
 
     for epoch in range(epochs):
         model.train()
-        train_loss, train_mae, train_mape = _epoch_metrics(train_loader, training=True)
+        train_loss, train_mae, train_rmse, train_mape = _epoch_metrics(train_loader, training=True)
 
         model.eval()
         with torch.no_grad():
-            val_loss, val_mae, val_mape = _epoch_metrics(val_loader, training=False)
+            val_loss, val_mae, val_rmse, val_mape = _epoch_metrics(val_loader, training=False)
 
-        # loss is the sample-weighted epoch MSE, so its square root is the epoch RMSE
         history['loss'].append(train_loss); history['mae'].append(train_mae)
-        history['rmse'].append(np.sqrt(train_loss)); history['mape'].append(train_mape)
+        history['rmse'].append(train_rmse); history['mape'].append(train_mape)
         history['val_loss'].append(val_loss); history['val_mae'].append(val_mae)
-        history['val_rmse'].append(np.sqrt(val_loss)); history['val_mape'].append(val_mape)
+        history['val_rmse'].append(val_rmse); history['val_mape'].append(val_mape)
 
         if verbose:
-            print(f"Epoch {epoch+1}/{epochs} - loss: {train_loss:.4f} - mae: {train_mae:.4f} - "
-                  f"val_loss: {val_loss:.4f} - val_mae: {val_mae:.4f} - "
-                  f"val_rmse: {np.sqrt(val_loss):.4f}")
+            print(f"Epoch {epoch+1}/{epochs} - loss (MAPE): {train_loss:.4f} - mae: {train_mae:.4f} - "
+                  f"val_loss (MAPE): {val_loss:.4f} - val_mae: {val_mae:.4f} - "
+                  f"val_rmse: {val_rmse:.4f}")
+
+        history['lr'].append(optimizer.param_groups[0]['lr'])
+        if scheduler is not None:
+            scheduler.step(val_loss)
 
         if val_loss < best_val_loss:
             best_val_loss, patience_counter = val_loss, 0
@@ -349,11 +401,13 @@ def fit_regression(model, X_train, y_train, X_val, y_val,
 
 def fit_classifier(model, X_train, y_train, X_val, y_val,
                    lr=0.001, epochs=50, batch_size=32, patience=10,
+                   lr_factor=None, lr_patience=5, min_lr=1e-6,
                    device=None, verbose=True):
     """Train a classifier with the standard PyTorch training loop.
 
     Uses Adam + CrossEntropyLoss (expects integer class labels and a model
-    that outputs logits) with early stopping and best-weight restore.
+    that outputs logits) with early stopping and best-weight restore. Optional
+    performance scheduling lowers the learning rate on val_loss plateaus.
 
     Args:
         model (torch.nn.Module): Model to train (modified in place)
@@ -363,6 +417,11 @@ def fit_classifier(model, X_train, y_train, X_val, y_val,
         epochs (int): Maximum number of epochs
         batch_size (int): Mini-batch size
         patience (int): Early stopping patience (epochs without val_loss improvement)
+        lr_factor (float): Performance scheduling: multiply the learning rate by this when
+            val_loss plateaus for lr_patience epochs (ReduceLROnPlateau). None disables it.
+            Keep lr_patience below patience so the rate can drop before training stops.
+        lr_patience (int): Epochs without val_loss improvement before cutting the rate
+        min_lr (float): Lower bound for the learning rate
         device: torch device, defaults to best available
         verbose (bool): Print per-epoch metrics
 
@@ -382,9 +441,10 @@ def fit_classifier(model, X_train, y_train, X_val, y_val,
         batch_size=batch_size, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = _make_lr_scheduler(optimizer, lr_factor, lr_patience, min_lr)
     criterion = nn.CrossEntropyLoss()
 
-    history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
+    history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': [], 'lr': []}
     best_val_loss, patience_counter, best_state = float('inf'), 0, None
 
     def _epoch_metrics(loader, training):
@@ -421,6 +481,10 @@ def fit_classifier(model, X_train, y_train, X_val, y_val,
             print(f"Epoch {epoch+1}/{epochs} - loss: {train_loss:.4f} - accuracy: {train_acc:.4f} - "
                   f"val_loss: {val_loss:.4f} - val_accuracy: {val_acc:.4f}")
 
+        history['lr'].append(optimizer.param_groups[0]['lr'])
+        if scheduler is not None:
+            scheduler.step(val_loss)
+
         if val_loss < best_val_loss:
             best_val_loss, patience_counter = val_loss, 0
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
@@ -435,6 +499,77 @@ def fit_classifier(model, X_train, y_train, X_val, y_val,
         model.load_state_dict({k: v.to(device) for k, v in best_state.items()})
 
     return HistoryObject(history)
+
+def lr_schedule_to_best_epoch(history):
+    """Per-epoch learning rates from a fit_regression / fit_classifier run, up to and
+    including the epoch with the lowest val_loss (the weights early stopping restored).
+
+    Replaying this schedule with fit_full reproduces that training run's length and
+    learning-rate drops without needing a validation set.
+    """
+    h = history.history if hasattr(history, 'history') else history
+    best = int(np.argmin(h['val_loss']))
+    return list(h['lr'][:best + 1])
+
+
+def fit_full(model, X, y, lr_schedule, batch_size=32, task='regression',
+             device=None, verbose=False):
+    """Train on every row (no validation split) for len(lr_schedule) epochs.
+
+    Used to refit a selected architecture on the full training set: there is no
+    validation data left for early stopping or performance scheduling, so the
+    epoch count and per-epoch learning rates come from the selection run
+    (see lr_schedule_to_best_epoch). Same Adam optimizer and losses as
+    fit_regression (MAPE) / fit_classifier (cross-entropy).
+
+    Args:
+        model (torch.nn.Module): Model to train (modified in place)
+        X, y: All training features and targets (integer labels for 'classification')
+        lr_schedule (list[float]): Learning rate for each epoch
+        batch_size (int): Mini-batch size
+        task (str): 'regression' or 'classification'
+        device: torch device, defaults to best available
+        verbose (bool): Print per-epoch loss
+
+    Returns:
+        HistoryObject: per-epoch training loss and lr
+    """
+    device = device or _default_device
+    model = model.to(device)
+    if task == 'regression':
+        y_t = torch.as_tensor(np.asarray(y, dtype=np.float32).reshape(-1, 1))
+        criterion = mape_loss
+    else:
+        y_t = torch.as_tensor(np.asarray(y), dtype=torch.long)
+        criterion = nn.CrossEntropyLoss()
+
+    # A final batch of one sample would break BatchNorm in training mode
+    drop_last = len(X) % batch_size == 1
+    loader = DataLoader(TensorDataset(torch.as_tensor(np.asarray(X, dtype=np.float32)), y_t),
+                        batch_size=batch_size, shuffle=True, drop_last=drop_last)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr_schedule[0])
+
+    history = {'loss': [], 'lr': []}
+    for epoch, lr in enumerate(lr_schedule):
+        for group in optimizer.param_groups:
+            group['lr'] = lr
+        model.train()
+        total_loss, n_samples = 0.0, 0
+        for X_batch, y_batch in loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(X_batch), y_batch)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * y_batch.size(0)
+            n_samples += y_batch.size(0)
+        history['loss'].append(total_loss / n_samples)
+        history['lr'].append(lr)
+        if verbose:
+            print(f"Epoch {epoch+1}/{len(lr_schedule)} - loss: {history['loss'][-1]:.4f} - lr: {lr:.2e}")
+
+    return HistoryObject(history)
+
 
 def _select_feature_columns(diamonds, numerical_features, categorical_features, target):
     """Validate the feature lists and return an explicit feature-only DataFrame (allowlist).

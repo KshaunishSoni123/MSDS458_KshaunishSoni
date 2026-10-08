@@ -285,9 +285,13 @@ def train_tier_regression_models(
                 'medium': {'layers': [128, 64, 32], 'lr': 0.001, 'epochs': 50, 'batch_size': 32, 'patience': 3},
                 'high':   {'layers': [128, 64, 32], 'lr': 0.001, 'epochs': 50, 'batch_size': 32, 'patience': 3},
             }
-            Optional keys: 'batch_norm' (Linear -> BatchNorm1d -> ReLU, default False) and
+            Optional keys: 'batch_norm' (Linear -> BatchNorm1d -> activation, default False),
             'output_scale' (fixed rescaling of the output to the tier's price mean/std,
-            default False).
+            default False), 'activation' ('relu' default or 'leaky_relu'), 'negative_slope',
+            'init' ('he' for He initialization), 'lr_factor' / 'lr_patience' / 'min_lr'
+            (performance scheduling; off unless lr_factor is set), and 'lr_schedule'
+            (list of per-epoch learning rates: refit on ALL of the tier's rows with
+            du.fit_full instead of the 80/20 split + early stopping).
         numerical_features: List of numerical feature column names
         categorical_features: List of categorical feature column names
         low_threshold: Price boundary between low and medium tiers
@@ -318,9 +322,14 @@ def train_tier_regression_models(
         preprocessors[tier] = preprocessor
 
         y_np = y_processed.values if hasattr(y_processed, 'values') else np.asarray(y_processed)
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_processed, y_np, test_size=0.2, random_state=random_state
-        )
+        refit = cfg.get('lr_schedule') is not None
+        if refit:
+            # Refit on every row of this tier: no validation split
+            X_train, y_train = X_processed, y_np
+        else:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_processed, y_np, test_size=0.2, random_state=random_state
+            )
 
         layers_list = []
         prev_units = X_train.shape[1]
@@ -328,7 +337,8 @@ def train_tier_regression_models(
             layers_list.append(nn.Linear(prev_units, units))
             if cfg.get('batch_norm', False):
                 layers_list.append(nn.BatchNorm1d(units))
-            layers_list.append(nn.ReLU())
+            layers_list.append(du.hidden_activation(cfg.get('activation', 'relu'),
+                                                    cfg.get('negative_slope', 0.01)))
             prev_units = units
         layers_list.append(nn.Linear(prev_units, 1))
         if cfg.get('output_scale', False):
@@ -336,20 +346,31 @@ def train_tier_regression_models(
             layers_list.append(du.OutputScale(y_train.mean(), y_train.std()))
 
         tier_model = nn.Sequential(*layers_list)
+        if cfg.get('init') == 'he':
+            du.init_he_weights(tier_model, cfg.get('activation', 'relu'),
+                               cfg.get('negative_slope', 0.01))
 
-        history = du.fit_regression(
-            tier_model, X_train, y_train, X_val, y_val,
-            lr=cfg.get('lr', 0.001),
-            epochs=cfg.get('epochs', 50),
-            batch_size=cfg.get('batch_size', 32),
-            patience=cfg.get('patience', 3),
-        )
+        if refit:
+            history = du.fit_full(tier_model, X_train, y_train, cfg['lr_schedule'],
+                                  batch_size=cfg.get('batch_size', 32), task='regression')
+        else:
+            history = du.fit_regression(
+                tier_model, X_train, y_train, X_val, y_val,
+                lr=cfg.get('lr', 0.001),
+                epochs=cfg.get('epochs', 50),
+                batch_size=cfg.get('batch_size', 32),
+                patience=cfg.get('patience', 3),
+                lr_factor=cfg.get('lr_factor'),
+                lr_patience=cfg.get('lr_patience', 5),
+                min_lr=cfg.get('min_lr', 1e-6),
+            )
 
         models[tier] = tier_model
         histories[tier] = history
 
-        du.evaluate_model(tier_model, X_val, y_val)
-        du.plot_training_history(history)
+        if not refit:
+            du.evaluate_model(tier_model, X_val, y_val)
+            du.plot_training_history(history)
         print(f"=== {tier.upper()} tier complete ===\n")
 
     print("All tier models trained successfully!")
@@ -379,7 +400,9 @@ def train_tier_classifier(
                 'batch_size': 32,
                 'patience': 10,
             }
-            Optional key: 'batch_norm' (Linear -> BatchNorm1d -> ReLU, default False).
+            Optional keys: 'batch_norm', 'activation', 'negative_slope', 'init',
+            'lr_factor', 'lr_patience', 'min_lr', 'lr_schedule' (same meaning as for the
+            tier regressors).
         numerical_features: List of numerical feature column names
         categorical_features: List of categorical feature column names
         low_threshold: Price boundary between low and medium tiers
@@ -393,12 +416,20 @@ def train_tier_classifier(
     )
     diamonds_tiers_train = diamonds_tiers_train.drop(columns=['price'])
 
-    X_train, X_test, y_train, y_test, preprocessor = du.prepare_data(
-        diamonds_tiers_train, numerical_features, categorical_features,
-        target='price_tier', encode_target=True,
-    )
-
     cfg = classifier_config
+    refit = cfg.get('lr_schedule') is not None
+    if refit:
+        # Refit on every row: no validation split
+        X_train, y_train, preprocessor = du.prepare_data_without_split(
+            diamonds_tiers_train, numerical_features, categorical_features,
+            target='price_tier', encode_target=True,
+        )
+    else:
+        X_train, X_test, y_train, y_test, preprocessor = du.prepare_data(
+            diamonds_tiers_train, numerical_features, categorical_features,
+            target='price_tier', encode_target=True,
+        )
+
     dropout_rate = cfg.get('dropout', 0.0)
 
     layers_list = []
@@ -407,7 +438,8 @@ def train_tier_classifier(
         layers_list.append(nn.Linear(prev_units, units))
         if cfg.get('batch_norm', False):
             layers_list.append(nn.BatchNorm1d(units))
-        layers_list.append(nn.ReLU())
+        layers_list.append(du.hidden_activation(cfg.get('activation', 'relu'),
+                                                cfg.get('negative_slope', 0.01)))
         if dropout_rate > 0:
             layers_list.append(nn.Dropout(dropout_rate))
         prev_units = units
@@ -415,7 +447,15 @@ def train_tier_classifier(
     layers_list.append(nn.Linear(prev_units, 3))
 
     classifier_model = nn.Sequential(*layers_list)
+    if cfg.get('init') == 'he':
+        du.init_he_weights(classifier_model, cfg.get('activation', 'relu'),
+                           cfg.get('negative_slope', 0.01))
     print(classifier_model)
+
+    if refit:
+        history = du.fit_full(classifier_model, X_train, y_train, cfg['lr_schedule'],
+                              batch_size=cfg.get('batch_size', 32), task='classification')
+        return classifier_model, preprocessor, history
 
     history = du.fit_classifier(
         classifier_model, X_train, y_train, X_test, y_test,
@@ -423,6 +463,9 @@ def train_tier_classifier(
         epochs=cfg.get('epochs', 50),
         batch_size=cfg.get('batch_size', 32),
         patience=cfg.get('patience', 10),
+        lr_factor=cfg.get('lr_factor'),
+        lr_patience=cfg.get('lr_patience', 5),
+        min_lr=cfg.get('min_lr', 1e-6),
     )
 
     # Final evaluation on the held-out split

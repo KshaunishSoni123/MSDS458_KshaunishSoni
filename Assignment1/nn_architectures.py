@@ -28,7 +28,9 @@ import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
 
-from Assignment1.diamonds_utils import prepare_data, fit_regression, validate_model, OutputScale
+from Assignment1.diamonds_utils import (prepare_data, fit_regression, validate_model, OutputScale,
+                                        hidden_activation, init_he_weights, fit_full,
+                                        lr_schedule_to_best_epoch)
 from feature_engineering import (build_features, NUMERICAL_FEATURES,
                                  CATEGORICAL_FEATURES, TARGET)
 
@@ -39,8 +41,15 @@ CONFIG = {
     "lr": 1e-3,            # Adam learning rate
     "batch_size": 64,
     "epochs": 100,         # maximum; early stopping usually ends sooner
-    "patience": 10,        # epochs without val_loss improvement before stopping
-    "batch_norm": True,    # Linear -> BatchNorm1d -> ReLU in every hidden layer
+    "patience": 15,        # epochs without val_loss improvement before stopping
+    "batch_norm": True,    # Linear -> BatchNorm1d -> activation in every hidden layer
+    "activation": "leaky_relu",  # hidden activation: 'leaky_relu' or 'relu'
+    "negative_slope": 0.01,      # LeakyReLU slope for x < 0
+    "init": "he",          # He (Kaiming) normal init matched to the activation; None = PyTorch default
+    "lr_factor": 0.5,      # performance scheduling: halve the lr when val_loss plateaus...
+    "lr_patience": 4,      # ...for this many epochs (kept below the early-stopping patience)
+    "min_lr": 1e-6,
+    "ensemble_size": 5,    # refit the selected architecture on all training data with this many seeds
     "val_size": 0.2,       # fraction of the training set held out for validation
     "seed": 73,
 }
@@ -54,6 +63,9 @@ ARCHITECTURES = {
     "A05_2_128-64":    [128, 64],
     "A06_3_64-64-64":  [64, 64, 64],
     "A07_3_128-64-32": [128, 64, 32],
+    "A08_4_128-64-32-16":     [128, 64, 32, 16],
+    "A09_4_256-128-64-32":    [256, 128, 64, 32],
+    "A10_5_256-128-64-32-16": [256, 128, 64, 32, 16],
 }
 
 # Accuracy requirements: mean APE (MAPE) at or below the target, and 95% of
@@ -80,17 +92,20 @@ def set_seed(seed):
 
 
 def build_mlp(input_dim, hidden_layers, batch_norm=True, output_mean=0.0, output_scale=1.0,
-              n_outputs=1):
+              n_outputs=1, activation="relu", negative_slope=0.01, init=None):
     """Build a fully connected network: a price regressor or a tier classifier.
 
     Args:
         input_dim (int): Number of input features
         hidden_layers (list[int]): Width of each hidden layer, in order
-        batch_norm (bool): Insert BatchNorm1d between each Linear and its ReLU
+        batch_norm (bool): Insert BatchNorm1d between each Linear and its activation
         output_mean, output_scale (float): Fixed rescaling of the regression output,
             normally the training-set mean and std of price
         n_outputs (int): 1 for regression (price, rescaled by OutputScale); >1 for a
             classifier emitting raw logits (CrossEntropyLoss applies the softmax)
+        activation (str): Hidden activation, 'relu' or 'leaky_relu'
+        negative_slope (float): LeakyReLU slope
+        init (str): 'he' for He (Kaiming) normal initialization, None for PyTorch default
 
     Returns:
         torch.nn.Sequential: The network (not yet moved to a device)
@@ -102,12 +117,60 @@ def build_mlp(input_dim, hidden_layers, batch_norm=True, output_mean=0.0, output
         layers.append(nn.Linear(in_dim, width))
         if batch_norm:
             layers.append(nn.BatchNorm1d(width))
-        layers.append(nn.ReLU())
+        layers.append(hidden_activation(activation, negative_slope))
         in_dim = width
     layers.append(nn.Linear(in_dim, n_outputs))
     if n_outputs == 1:
         layers.append(OutputScale(output_mean, output_scale))
-    return nn.Sequential(*layers)
+    model = nn.Sequential(*layers)
+    if init == "he":
+        init_he_weights(model, activation, negative_slope)
+    return model
+
+
+class EnsembleRegressor(nn.Module):
+    """Averages the price predictions of several independently trained networks."""
+    def __init__(self, members):
+        super().__init__()
+        self.members = nn.ModuleList(members)
+
+    def forward(self, x):
+        return torch.stack([m(x) for m in self.members], dim=0).mean(dim=0)
+
+
+def refit_ensemble(hidden_layers, X_train, y_train, history, config=CONFIG, n_members=None):
+    """Refit an architecture on ALL training rows with several seeds and average them.
+
+    There is no validation data left, so each member trains for the same number of
+    epochs, with the same per-epoch learning rates, as the selection run did up to
+    its best epoch (du.lr_schedule_to_best_epoch). Member i uses seed config['seed'] + i.
+
+    Args:
+        hidden_layers (list[int]): Architecture chosen by the sweep
+        X_train, y_train: Full preprocessed training set (no validation hold-out)
+        history (dict | HistoryObject): The selection run's training history
+        config (dict): Shared training setup (see CONFIG)
+        n_members (int): Ensemble size, defaults to config['ensemble_size']
+
+    Returns:
+        EnsembleRegressor: Averaging ensemble of the refit networks
+    """
+    n_members = n_members or config["ensemble_size"]
+    schedule = lr_schedule_to_best_epoch(history)
+    y_np = np.asarray(y_train, dtype=np.float32)
+    members = []
+    for i in range(n_members):
+        set_seed(config["seed"] + i)
+        model = build_mlp(X_train.shape[1], hidden_layers, batch_norm=config["batch_norm"],
+                          output_mean=float(y_np.mean()), output_scale=float(y_np.std()),
+                          activation=config["activation"],
+                          negative_slope=config["negative_slope"], init=config["init"])
+        print(f"  refit member {i + 1}/{n_members}: {len(schedule)} epochs on "
+              f"{len(X_train):,} rows (seed {config['seed'] + i})")
+        fit_full(model, X_train, y_np, schedule, batch_size=config["batch_size"],
+                 task="regression")
+        members.append(model)
+    return EnsembleRegressor(members)
 
 
 def count_parameters(model):
@@ -144,7 +207,7 @@ def run_architecture_sweep(architectures, X_train, y_train, config=CONFIG,
         verbose (bool): Print per-epoch training metrics
 
     Returns:
-        tuple: (comparison DataFrame sorted by val RMSE, {name: history dict}, {name: model})
+        tuple: (comparison DataFrame sorted by val MAPE, {name: history dict}, {name: model})
     """
     architectures = _as_named(architectures)
     os.makedirs(results_dir, exist_ok=True)
@@ -166,7 +229,9 @@ def run_architecture_sweep(architectures, X_train, y_train, config=CONFIG,
     for name, widths in architectures.items():
         set_seed(config["seed"])
         model = build_mlp(X_tr.shape[1], widths, batch_norm=config["batch_norm"],
-                          output_mean=y_mean, output_scale=y_std)
+                          output_mean=y_mean, output_scale=y_std,
+                          activation=config["activation"],
+                          negative_slope=config["negative_slope"], init=config["init"])
         n_params = count_parameters(model)
         print(f"\n--- {name}: hidden layers {widths} ({n_params:,} parameters) ---")
 
@@ -174,12 +239,15 @@ def run_architecture_sweep(architectures, X_train, y_train, config=CONFIG,
         history = fit_regression(model, X_tr, y_tr, X_val, y_val,
                                  lr=config["lr"], epochs=config["epochs"],
                                  batch_size=config["batch_size"],
-                                 patience=config["patience"], verbose=verbose)
+                                 patience=config["patience"], lr_factor=config["lr_factor"],
+                                 lr_patience=config["lr_patience"], min_lr=config["min_lr"],
+                                 verbose=verbose)
         train_time = time.time() - start
         h = history.history
         best_epoch = int(np.argmin(h["val_loss"]))
 
-        notes = f"layers={widths}; bn={config['batch_norm']}; lr={config['lr']}; bs={config['batch_size']}"
+        notes = (f"layers={widths}; bn={config['batch_norm']}; act={config['activation']}; "
+                 f"init={config['init']}; lr={config['lr']}; bs={config['batch_size']}")
         train_table = validate_model(model, X_tr, y_tr, name, split="train",
                                      inverse_transform=inverse_transform,
                                      table_path=metrics_path, notes=notes)
@@ -204,7 +272,7 @@ def run_architecture_sweep(architectures, X_train, y_train, config=CONFIG,
         histories[name] = h
         models[name] = model
 
-    comparison = (pd.DataFrame(rows).sort_values("val_RMSE").reset_index(drop=True))
+    comparison = (pd.DataFrame(rows).sort_values("val_MAPE").reset_index(drop=True))
     comparison.to_csv(os.path.join(results_dir, "architecture_comparison.csv"), index=False)
     pd.DataFrame([{"model": n, "epoch": e + 1, **{k: v[e] for k, v in h.items()}}
                   for n, h in histories.items() for e in range(len(h["loss"]))]
@@ -223,7 +291,7 @@ def _style_axis(ax):
     ax.tick_params(colors=MUTED, labelsize=8)
 
 
-def plot_learning_curves(histories, path, metric="rmse", ylabel="RMSE (USD)", dollars=True,
+def plot_learning_curves(histories, path, metric="mape", ylabel="MAPE (%)", dollars=False,
                          log_scale=True, title="Learning curves by architecture"):
     """Small multiples: train vs validation `metric` (a history key) per architecture."""
     names = list(histories)
@@ -259,18 +327,17 @@ def plot_learning_curves(histories, path, metric="rmse", ylabel="RMSE (USD)", do
     print(f"  saved {path}")
 
 
-def plot_comparison(comparison, path, title="Validation RMSE by architecture"):
-    """Horizontal bars of validation RMSE in dollars, best architecture on top."""
-    df = comparison.sort_values("val_RMSE", ascending=False)
+def plot_comparison(comparison, path, title="Validation MAPE by architecture"):
+    """Horizontal bars of validation MAPE, best (lowest) architecture on top."""
+    df = comparison.sort_values("val_MAPE", ascending=False)
     fig, ax = plt.subplots(figsize=(9, 0.45 * len(df) + 1.2))
-    bars = ax.barh(df["model"], df["val_RMSE"], color=TRAIN_COLOR, height=0.6)
-    for bar, rmse, mape in zip(bars, df["val_RMSE"], df["val_MAPE"]):
+    bars = ax.barh(df["model"], df["val_MAPE"], color=TRAIN_COLOR, height=0.6)
+    for bar, mape, rmse in zip(bars, df["val_MAPE"], df["val_RMSE"]):
         ax.text(bar.get_width(), bar.get_y() + bar.get_height() / 2,
-                f"  ${rmse:,.0f}  ({mape:.1f}% MAPE)", va="center", fontsize=8, color=MUTED)
-    ax.set_xlabel("Validation RMSE (USD)", color=INK)
+                f"  {mape:.2f}%  (RMSE ${rmse:,.0f})", va="center", fontsize=8, color=MUTED)
+    ax.set_xlabel("Validation MAPE (%)", color=INK)
     ax.set_title(title, fontweight="bold", color=INK, loc="left")
-    ax.set_xlim(0, df["val_RMSE"].max() * 1.3)
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v:,.0f}"))
+    ax.set_xlim(0, df["val_MAPE"].max() * 1.3)
     _style_axis(ax)
     ax.grid(axis="y", visible=False)
     ax.tick_params(axis="y", labelsize=9, colors=INK)
@@ -289,12 +356,12 @@ def main():
     comparison, histories, _ = run_architecture_sweep(ARCHITECTURES, X_train, y_train)
 
     plot_learning_curves(histories, os.path.join(RESULTS_DIR, "architecture_learning_curves.png"))
-    plot_comparison(comparison, os.path.join(RESULTS_DIR, "architecture_val_rmse.png"))
+    plot_comparison(comparison, os.path.join(RESULTS_DIR, "architecture_val_mape.png"))
 
     pd.set_option("display.width", 200)
     cols = ["model", "params", "epochs_run", "best_epoch", "train_time_s",
             "train_RMSE", "val_MAE", "val_RMSE", "val_MAPE", "val_R2"]
-    print("\nArchitecture comparison (sorted by validation RMSE, USD):")
+    print("\nArchitecture comparison (sorted by validation MAPE):")
     print(comparison[cols].round(3).to_string(index=False))
 
 
@@ -308,7 +375,7 @@ def plot_target_comparison(df, path, title, label_col="model", prefix="val_",
 
     Bars in the MAPE / APE P95 panels are green when the model meets the requirement
     and red when it misses, with PASS / MISS in the value label so pass/fail
-    does not rely on color alone. Models keep the same order (best RMSE on top)
+    does not rely on color alone. Models keep the same order (best MAPE on top)
     across panels.
 
     Args:
@@ -319,7 +386,7 @@ def plot_target_comparison(df, path, title, label_col="model", prefix="val_",
         label_col (str): Column holding the model name
         prefix (str): Metric column prefix ('val_' for sweep tables, '' for test tables)
     """
-    d = df.sort_values(f"{prefix}RMSE", ascending=False).reset_index(drop=True)
+    d = df.sort_values(f"{prefix}MAPE", ascending=False).reset_index(drop=True)
     labels = d[label_col].tolist()
     fig, axes = plt.subplots(1, 3, figsize=(16, 0.5 * len(d) + 2.2), sharey=True)
 

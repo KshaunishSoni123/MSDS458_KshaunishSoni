@@ -6,10 +6,11 @@ Pipeline:
   3. Feature engineering                         (feature_engineering.build_features)
   4. Train/test split and scaling                (diamonds_utils.prepare_data)
   5. Architecture sweep, identical setup per net (nn_architectures.run_architecture_sweep)
-  6. Best architecture scored on the test set    (diamonds_utils.validate_model / evaluate_model)
+  6. Best architecture refit on all training data as a seed ensemble, scored on the test set
   7. Balanced low/medium/high price tiers        (price_tiers.build_price_tiers) for the stackup
   8. Stackup architecture sweep, same setup as step 5 (stackup.run_stackup_sweep, stackup_utils)
-  9. Best stackup scored on the test set, compared with the best single network
+  9. Best stackup refit on all training data as a seed ensemble, scored on the test set and
+     compared with the best single network
 
 Run with:
 
@@ -45,7 +46,7 @@ from price_tiers import build_price_tiers, plot_tier_distribution
 import stackup
 from nn_architectures import (CONFIG, ARCHITECTURES, RESULTS_DIR, set_seed,
                               run_architecture_sweep, plot_learning_curves, plot_comparison,
-                              plot_target_comparison)
+                              plot_target_comparison, refit_ensemble)
 
 # diamonds_utils plotting helpers call plt.show(); under Agg the figures are saved instead
 warnings.filterwarnings("ignore", message=".*non-interactive.*")
@@ -83,17 +84,25 @@ def setup_environment(seed):
     print(f"Random seed set to {seed}")
 
 
+def score_on_test(name, model, X_test, y_test, results_dir, notes):
+    """Score a model on the test set (row written to metrics.csv) and return its metrics."""
+    table = du.validate_model(model, X_test, np.asarray(y_test, dtype=float), name, split="test",
+                              table_path=os.path.join(results_dir, "metrics.csv"), notes=notes)
+    row = table[(table.model == name) & (table.split == "test")].iloc[-1]
+    return {"variant": name, **{k: row[k] for k in ("MAE", "RMSE", "MAPE", "APE_P95", "R2")}}
+
+
 def evaluate_best_model(name, model, history, X_test, y_test, results_dir):
-    """Score the chosen architecture on the held-out test set and save its diagnostic plots.
+    """Score the final model on the held-out test set and save its diagnostic plots.
+
+    `history` is the selection run's training history (plotted for reference).
 
     Returns:
-        dict: variant name and test MAE / RMSE / MAPE / R2
+        dict: variant name and test MAE / RMSE / MAPE / APE_P95 / R2
     """
     y_true = np.asarray(y_test, dtype=float)
-    table = du.validate_model(model, X_test, y_true, name, split="test",
-                              table_path=os.path.join(results_dir, "metrics.csv"),
-                              notes="best architecture by val RMSE")
-    row = table[(table.model == name) & (table.split == "test")].iloc[-1]
+    result = score_on_test(name, model, X_test, y_true, results_dir,
+                           notes="best architecture by val MAPE, refit ensemble")
 
     du.plot_training_history(history)
     save_current_figure(os.path.join(results_dir, "best_training_history.png"))
@@ -106,14 +115,14 @@ def evaluate_best_model(name, model, history, X_test, y_test, results_dir):
 
     du.plot_percentage_error_by_price(y_true, y_pred)
     save_current_figure(os.path.join(results_dir, "best_percentage_error_by_price.png"))
-    return {"variant": name, **{k: row[k] for k in ("MAE", "RMSE", "MAPE", "APE_P95", "R2")}}
+    return result
 
 
 def main(skip_eda=False, skip_sweep=False, quick=False):
     config, architectures, results_dir = CONFIG, ARCHITECTURES, RESULTS_DIR
     stackups = stackup.STACKUP_ARCHITECTURES
     if quick:
-        config = {**CONFIG, "epochs": 3}
+        config = {**CONFIG, "epochs": 3, "ensemble_size": 2}
         names = list(ARCHITECTURES)
         architectures = {k: ARCHITECTURES[k] for k in (names[0], names[-1])}
         names = list(stackups)
@@ -137,27 +146,33 @@ def main(skip_eda=False, skip_sweep=False, quick=False):
     X_train, X_test, y_train, y_test, _ = du.prepare_data(
         df, NUMERICAL_FEATURES, CATEGORICAL_FEATURES, target=TARGET)
 
-    single_test = None
+    single_tests = []
     if not skip_sweep:
         section("5. Architecture sweep")
         print("Shared config:", config)
         comparison, histories, models = run_architecture_sweep(
             architectures, X_train, y_train, config=config, results_dir=results_dir)
         plot_learning_curves(histories, os.path.join(results_dir, "architecture_learning_curves.png"))
-        plot_comparison(comparison, os.path.join(results_dir, "architecture_val_rmse.png"))
+        plot_comparison(comparison, os.path.join(results_dir, "architecture_val_mape.png"))
         plot_target_comparison(comparison, os.path.join(results_dir, "regression_targets.png"),
                                title="Single regression networks vs accuracy targets (validation)")
 
         pd.set_option("display.width", 200)
         cols = ["model", "params", "epochs_run", "best_epoch", "train_time_s",
                 "train_RMSE", "val_MAE", "val_RMSE", "val_MAPE", "val_APE_P95", "val_R2"]
-        print("\nArchitecture comparison (sorted by validation RMSE, USD):")
+        print("\nArchitecture comparison (sorted by validation MAPE):")
         print(comparison[cols].round(3).to_string(index=False))
 
         best = comparison.iloc[0]["model"]
-        section(f"6. Test-set evaluation of best architecture: {best}")
-        single_test = evaluate_best_model(best, models[best], histories[best], X_test, y_test,
-                                          results_dir)
+        section(f"6. Best architecture {best}: refit on all training data + "
+                f"{config['ensemble_size']}-seed ensemble, test-set evaluation")
+        single_tests.append(score_on_test(best, models[best], X_test, y_test, results_dir,
+                                          notes="best architecture by val MAPE, sweep model"))
+        ensemble = refit_ensemble(architectures[best], X_train, y_train, histories[best],
+                                  config=config)
+        ens_name = f"{best}_refit_ens{config['ensemble_size']}"
+        single_tests.append(evaluate_best_model(ens_name, ensemble, histories[best],
+                                                X_test, y_test, results_dir))
 
     section("7. Price tiers for the stackup models")
     train_df, test_df, thresholds = build_price_tiers(df)
@@ -171,12 +186,12 @@ def main(skip_eda=False, skip_sweep=False, quick=False):
           f"({100 * len(diamonds_test) / len(df):.0f}% test)")
     print("Shared config (same as step 5):", config)
 
-    stack_comparison, stacks, clf_histories = stackup.run_stackup_sweep(
+    stack_comparison, stacks, clf_histories, schedules = stackup.run_stackup_sweep(
         diamonds_train, stackups, NUMERICAL_FEATURES, CATEGORICAL_FEATURES, thresholds,
         config=config, results_dir=results_dir)
     print("\n✅ IMPORTANT: diamonds_test is kept completely separate for stackup evaluation")
-    plot_comparison(stack_comparison, os.path.join(results_dir, "stackup_val_rmse.png"),
-                    title="Stackup validation RMSE (probability-weighted price)")
+    plot_comparison(stack_comparison, os.path.join(results_dir, "stackup_val_mape.png"),
+                    title="Stackup validation MAPE (probability-weighted price)")
     plot_target_comparison(stack_comparison, os.path.join(results_dir, "stackup_targets.png"),
                            title="Stackup models vs accuracy targets "
                                  "(validation, probability-weighted price)")
@@ -187,24 +202,34 @@ def main(skip_eda=False, skip_sweep=False, quick=False):
     stack_cols = ["model", "params", "clf_epochs", "reg_epochs", "train_time_s",
                   "clf_val_accuracy", "val_MAE", "val_RMSE", "val_MAPE", "val_APE_P95", "val_R2",
                   "hard_val_RMSE", "hard_val_MAPE"]
-    print("\nStackup comparison (sorted by validation RMSE of the weighted price, USD):")
+    print("\nStackup comparison (sorted by validation MAPE of the weighted price):")
     print(stack_comparison[stack_cols].round(3).to_string(index=False))
 
     best_stack = stack_comparison.iloc[0]["model"]
-    section(f"9. Test-set evaluation of best stackup: {best_stack}")
-    stack = stacks[best_stack]
+    section(f"9. Best stackup {best_stack}: refit on all training data + "
+            f"{config['ensemble_size']}-seed ensemble, test-set evaluation")
+    sweep_stack_test = stackup.evaluate_stackup(best_stack, stacks[best_stack], diamonds_test,
+                                                thresholds, results_dir=results_dir)
+    stack_ensemble = stackup.refit_stackup_ensemble(
+        stackups[best_stack], diamonds_train, schedules[best_stack],
+        NUMERICAL_FEATURES, CATEGORICAL_FEATURES, thresholds, config=config)
+    plt.close("all")
+    stack_ens_name = f"{best_stack}_refit_ens{config['ensemble_size']}"
     clf_test, tier_pred = stackup.evaluate_tier_classifier(
-        stack, diamonds_test, diamonds_test["price_tier"])
-    print(f"Tier classifier on diamonds_test: accuracy {clf_test['accuracy']:.4f}, "
+        stack_ensemble, diamonds_test, diamonds_test["price_tier"])
+    print(f"\nEnsemble tier classifier on diamonds_test: accuracy {clf_test['accuracy']:.4f}, "
           f"macro F1 {clf_test['macro_F1']:.4f}, log loss {clf_test['log_loss']:.4f}")
     stackup.plot_confusion_matrix(diamonds_test["price_tier"], tier_pred,
-                                  os.path.join(results_dir, "stackup_confusion_matrix.png"))
-    stack_test = stackup.evaluate_stackup(best_stack, stack, diamonds_test, thresholds,
-                                          results_dir=results_dir)
+                                  os.path.join(results_dir, "stackup_confusion_matrix.png"),
+                                  title="Stackup ensemble tier classifier (test)")
+    ens_stack_test = stackup.evaluate_stackup(stack_ens_name, stack_ensemble, diamonds_test,
+                                              thresholds, results_dir=results_dir)
+    stack_test = pd.concat([sweep_stack_test, ens_stack_test], ignore_index=True)
+    stack_test.to_csv(os.path.join(results_dir, "stackup_test_summary.csv"), index=False)
 
     final = stack_test.drop(columns="tier_accuracy")
-    if single_test is not None:
-        final = pd.concat([pd.DataFrame([single_test]), final], ignore_index=True)
+    if single_tests:
+        final = pd.concat([pd.DataFrame(single_tests), final], ignore_index=True)
     final.to_csv(os.path.join(results_dir, "final_test_comparison.csv"), index=False)
     plot_target_comparison(final, os.path.join(results_dir, "final_test_targets.png"),
                            title="Best single network vs best stackup: accuracy targets (test)",

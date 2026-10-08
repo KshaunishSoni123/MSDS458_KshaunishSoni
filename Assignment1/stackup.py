@@ -1,7 +1,7 @@
 """Stackup architecture sweep built with the stackup_utils functions.
 
 Each stackup = 1 tier classifier + 3 tier regressors (low / medium / high), with
-its own architectures defined in STACKUP_ARCHITECTURES (mirroring the 7 single
+its own architectures defined in STACKUP_ARCHITECTURES (mirroring the 10 single
 networks in nn_architectures.ARCHITECTURES). For every stackup:
 
   1. Tier regressors: sf.train_tier_regression_models(...)
@@ -11,10 +11,14 @@ networks in nn_architectures.ARCHITECTURES). For every stackup:
      (sf predict_batch) and the probability-weighted price
      sum_k P(tier k | x) * regressor_k(x).
 
+After the sweep, the best stackup is refit on all of diamonds_train with several
+seeds (refit_stackup_ensemble) and the ensemble's averaged prices are scored too.
+
 Training setup matches the step-5 single networks (nn_architectures.CONFIG): same
-learning rate, batch size, epoch limit, early-stopping patience, BatchNorm, and the
-same fixed output rescaling on the regressors. Like step 5, stackups are ranked by
-validation RMSE and only the best one is scored on diamonds_test.
+Adam learning rate and performance scheduling, batch size, epoch limit, early-stopping
+patience, BatchNorm, LeakyReLU activation, He initialization, and the same fixed
+output rescaling on the regressors. Like step 5, stackups are ranked by
+validation MAPE and only the best one is scored on diamonds_test.
 """
 
 import math
@@ -36,7 +40,7 @@ from nn_architectures import CONFIG, RESULTS_DIR, set_seed, count_parameters, \
 from price_tiers import TIER_NAMES
 
 # --- EXPERIMENT HERE: classifier and tier-regressor architectures for each stackup ---
-# Mirrors A01-A07 in nn_architectures.ARCHITECTURES. The same regressor layers are
+# Mirrors A01-A10 in nn_architectures.ARCHITECTURES. The same regressor layers are
 # used for all three tiers; give a stackup different classifier/regressor layers to
 # experiment.
 STACKUP_ARCHITECTURES = {
@@ -47,6 +51,12 @@ STACKUP_ARCHITECTURES = {
     "S05_2_128-64":    {"classifier": [128, 64],     "regressor": [128, 64]},
     "S06_3_64-64-64":  {"classifier": [64, 64, 64],  "regressor": [64, 64, 64]},
     "S07_3_128-64-32": {"classifier": [128, 64, 32], "regressor": [128, 64, 32]},
+    "S08_4_128-64-32-16":     {"classifier": [128, 64, 32, 16],
+                               "regressor":  [128, 64, 32, 16]},
+    "S09_4_256-128-64-32":    {"classifier": [256, 128, 64, 32],
+                               "regressor":  [256, 128, 64, 32]},
+    "S10_5_256-128-64-32-16": {"classifier": [256, 128, 64, 32, 16],
+                               "regressor":  [256, 128, 64, 32, 16]},
 }
 
 # Classifier-only regularization (the step-5 regressors have no dropout)
@@ -59,9 +69,9 @@ def stackup_configs(arch, config=CONFIG):
     The shared training settings come from the step-5 CONFIG so the stackups and
     the single networks train identically.
     """
-    shared = {'lr': config['lr'], 'epochs': config['epochs'],
-              'batch_size': config['batch_size'], 'patience': config['patience'],
-              'batch_norm': config['batch_norm']}
+    shared = {k: config[k] for k in ('lr', 'epochs', 'batch_size', 'patience', 'batch_norm',
+                                     'activation', 'negative_slope', 'init',
+                                     'lr_factor', 'lr_patience', 'min_lr')}
     tier_configs = {tier: {'layers': list(arch['regressor']), 'output_scale': True, **shared}
                     for tier in TIER_NAMES}
     classifier_config = {'layers': list(arch['classifier']), 'dropout': CLASSIFIER_DROPOUT,
@@ -120,16 +130,34 @@ def predict_price_weighted(stackup, X):
     return price
 
 
-def stackup_predictors(stackup):
-    """{'weighted': ..., 'hard': ...} price predictors usable with du.validate_model."""
-    return {"weighted": _PricePredictor(lambda X: predict_price_weighted(stackup, X)),
-            "hard": _PricePredictor(lambda X: stackup.predict_batch(X)[0])}
+def _as_list(stacks):
+    return stacks if isinstance(stacks, (list, tuple)) else [stacks]
 
 
-def evaluate_tier_classifier(stackup, X, tiers_true):
-    """Accuracy, macro F1 and log loss of the stackup's classifier."""
-    tier_pred, tier_probs = stackup.predict_tier(X)
-    classes = list(stackup.tier_encoder.classes_)
+def stackup_predictors(stacks):
+    """{'weighted': ..., 'hard': ...} price predictors usable with du.validate_model.
+
+    `stacks` is one stackup or a list of them (an ensemble); with several, each
+    variant's price is the average of the members' prices.
+    """
+    stacks = _as_list(stacks)
+    return {"weighted": _PricePredictor(
+                lambda X: np.mean([predict_price_weighted(s, X) for s in stacks], axis=0)),
+            "hard": _PricePredictor(
+                lambda X: np.mean([s.predict_batch(X)[0] for s in stacks], axis=0))}
+
+
+def predict_tier_ensemble(stacks, X):
+    """Tier names and probabilities, averaging the classifier probabilities of all stacks."""
+    stacks = _as_list(stacks)
+    probs = np.mean([s.predict_tier(X)[1] for s in stacks], axis=0)
+    return stacks[0].tier_encoder.inverse_transform(probs.argmax(axis=1)), probs
+
+
+def evaluate_tier_classifier(stacks, X, tiers_true):
+    """Accuracy, macro F1 and log loss of the stackup's (or ensemble's) classifier."""
+    tier_pred, tier_probs = predict_tier_ensemble(stacks, X)
+    classes = list(_as_list(stacks)[0].tier_encoder.classes_)
     return {"accuracy": accuracy_score(tiers_true, tier_pred),
             "macro_F1": f1_score(tiers_true, tier_pred, average="macro"),
             "log_loss": log_loss(tiers_true, tier_probs, labels=classes)}, tier_pred
@@ -145,8 +173,9 @@ def run_stackup_sweep(diamonds_train, stackups, numerical_features, categorical_
     then scored on the validation set. diamonds_test is never used here.
 
     Returns:
-        tuple: (comparison DataFrame sorted by weighted val RMSE,
-                {name: stackup}, {name: classifier history dict})
+        tuple: (comparison DataFrame sorted by weighted val MAPE,
+                {name: stackup}, {name: classifier history dict},
+                {name: {'classifier' | tier: per-epoch lr schedule up to the best epoch}})
     """
     low_t, high_t = thresholds
     fit_df, val_df = train_test_split(diamonds_train, test_size=config['val_size'],
@@ -156,7 +185,7 @@ def run_stackup_sweep(diamonds_train, stackups, numerical_features, categorical_
     metrics_path = os.path.join(results_dir, "metrics.csv")
     os.makedirs(results_dir, exist_ok=True)
 
-    rows, stacks, clf_histories = [], {}, {}
+    rows, stacks, clf_histories, schedules = [], {}, {}, {}
     for name, arch in stackups.items():
         tier_configs, classifier_config = stackup_configs(arch, config)
         print(f"\n{'=' * 70}\nStackup {name}: classifier {arch['classifier']}, "
@@ -210,36 +239,90 @@ def run_stackup_sweep(diamonds_train, stackups, numerical_features, categorical_
             "hard_val_RMSE": val["hard"]["RMSE"], "hard_val_MAPE": val["hard"]["MAPE"],
         })
         stacks[name], clf_histories[name] = stack, h
+        schedules[name] = {"classifier": du.lr_schedule_to_best_epoch(clf_history),
+                           **{t: du.lr_schedule_to_best_epoch(reg_histories[t])
+                              for t in TIER_NAMES}}
 
-    comparison = pd.DataFrame(rows).sort_values("val_RMSE").reset_index(drop=True)
+    comparison = pd.DataFrame(rows).sort_values("val_MAPE").reset_index(drop=True)
     comparison.to_csv(os.path.join(results_dir, "stackup_comparison.csv"), index=False)
-    return comparison, stacks, clf_histories
+    return comparison, stacks, clf_histories, schedules
 
 
-def evaluate_stackup(name, stackup, diamonds_test, thresholds, results_dir=RESULTS_DIR):
-    """Score one stackup on diamonds_test: sf evaluate_stackup (hard routing) plus the
-    weighted and hard price rows written to results/metrics.csv.
+def refit_stackup_ensemble(arch, diamonds_train, schedules, numerical_features,
+                           categorical_features, thresholds, config=CONFIG, n_members=None):
+    """Refit a stackup on ALL of diamonds_train with several seeds (an ensemble).
+
+    Each member retrains the classifier and the three tier regressors with the sf
+    functions on every training row (no validation split). With no data left for
+    early stopping, each network replays the per-epoch learning rates its selection
+    run used up to its best epoch (`schedules`, from run_stackup_sweep). Member i
+    uses seed config['seed'] + i.
 
     Returns:
-        pandas.DataFrame: test MAE / RMSE / MAPE / R2 per variant
+        list[sf.DiamondPriceStackup]: The refit stackups (average them with
+            stackup_predictors / predict_tier_ensemble)
     """
+    n_members = n_members or config['ensemble_size']
+    low_t, high_t = thresholds
+    tier_configs, classifier_config = stackup_configs(arch, config)
+    tier_configs = {t: {**c, 'lr_schedule': schedules[t]} for t, c in tier_configs.items()}
+    classifier_config = {**classifier_config, 'lr_schedule': schedules['classifier']}
+
+    stacks = []
+    for i in range(n_members):
+        print(f"\n--- Stackup refit member {i + 1}/{n_members} (seed {config['seed'] + i}): "
+              f"classifier {len(schedules['classifier'])} epochs, regressors "
+              f"{'/'.join(str(len(schedules[t])) for t in TIER_NAMES)} epochs ---")
+        set_seed(config['seed'] + i)
+        models, preprocessors, _ = sf.train_tier_regression_models(
+            diamonds_train, tier_configs, numerical_features, categorical_features,
+            low_threshold=low_t, high_threshold=high_t,
+        )
+        classifier_model, classifier_preprocessor, _ = sf.train_tier_classifier(
+            diamonds_train, classifier_config, numerical_features, categorical_features,
+            low_threshold=low_t, high_threshold=high_t,
+        )
+        stacks.append(sf.create_stackup_from_trained_models(
+            classifier_model=classifier_model,
+            regression_models=models,
+            preprocessors=preprocessors,
+            classifier_preprocessor=classifier_preprocessor,
+            low_threshold=low_t,
+            high_threshold=high_t,
+        ))
+    return stacks
+
+
+def evaluate_stackup(name, stacks, diamonds_test, thresholds, results_dir=RESULTS_DIR):
+    """Score a stackup (or an ensemble of stackups) on diamonds_test.
+
+    Writes the weighted and hard price rows to results/metrics.csv. For a single
+    stackup the sf evaluate_stackup report is printed as well.
+
+    Returns:
+        pandas.DataFrame: test MAE / RMSE / MAPE / APE_P95 / R2 per variant
+    """
+    stacks = _as_list(stacks)
     low_t, high_t = thresholds
     y_test = diamonds_test['price'].to_numpy(dtype=float)
-    hard = stackup.evaluate_stackup(diamonds_test, y_test, low_threshold=low_t,
-                                    high_threshold=high_t)
+    if len(stacks) == 1:
+        stacks[0].evaluate_stackup(diamonds_test, y_test, low_threshold=low_t,
+                                   high_threshold=high_t)
+    tier_pred, _ = predict_tier_ensemble(stacks, diamonds_test)
+    tier_accuracy = float(np.mean(tier_pred == diamonds_test['price_tier'].to_numpy()))
 
     rows = []
-    for mode, predictor in stackup_predictors(stackup).items():
+    for mode, predictor in stackup_predictors(stacks).items():
         label = f"{name}_{mode}"
         table = du.validate_model(predictor, diamonds_test, y_test, label, split="test",
                                   table_path=os.path.join(results_dir, "metrics.csv"),
-                                  notes=f"best stackup by val RMSE ({mode})")
+                                  notes=f"best stackup by val MAPE ({mode}); "
+                                        f"{len(stacks)} member(s)")
         row = table[(table.model == label) & (table.split == "test")].iloc[-1]
         rows.append({"variant": label,
                      **{k: row[k] for k in ("MAE", "RMSE", "MAPE", "APE_P95", "R2")}})
     summary = pd.DataFrame(rows)
-    summary["tier_accuracy"] = hard["tier_accuracy"]
-    summary.to_csv(os.path.join(results_dir, "stackup_test_summary.csv"), index=False)
+    summary["tier_accuracy"] = tier_accuracy
     return summary
 
 
