@@ -1,0 +1,211 @@
+Model: D01_1x128
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+flatten (Flatten)                         (None, 3072)                       0
+dense1 (Dense)                            (None, 128)                  393,216
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_relu (ReLU)                        (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 395,018
+Trainable params: 394,762
+Non-trainable params: 256
+
+Model: D02_1x512
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+flatten (Flatten)                         (None, 3072)                       0
+dense1 (Dense)                            (None, 512)                1,572,864
+dense1_bn (BatchNormalization)            (None, 512)                    2,048
+dense1_relu (ReLU)                        (None, 512)                        0
+dense1_dropout (Dropout)                  (None, 512)                        0
+output (Dense)                            (None, 10)                     5,130
+------------------------------------------------------------------------------
+Total params: 1,580,042
+Trainable params: 1,579,018
+Non-trainable params: 1,024
+
+Model: D03_2_512-256
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+flatten (Flatten)                         (None, 3072)                       0
+dense1 (Dense)                            (None, 512)                1,572,864
+dense1_bn (BatchNormalization)            (None, 512)                    2,048
+dense1_relu (ReLU)                        (None, 512)                        0
+dense1_dropout (Dropout)                  (None, 512)                        0
+dense2 (Dense)                            (None, 256)                  131,072
+dense2_bn (BatchNormalization)            (None, 256)                    1,024
+dense2_relu (ReLU)                        (None, 256)                        0
+dense2_dropout (Dropout)                  (None, 256)                        0
+output (Dense)                            (None, 10)                     2,570
+------------------------------------------------------------------------------
+Total params: 1,709,578
+Trainable params: 1,708,042
+Non-trainable params: 1,536
+
+Model: D04_3_1024-512-256
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+flatten (Flatten)                         (None, 3072)                       0
+dense1 (Dense)                            (None, 1024)               3,145,728
+dense1_bn (BatchNormalization)            (None, 1024)                   4,096
+dense1_relu (ReLU)                        (None, 1024)                       0
+dense1_dropout (Dropout)                  (None, 1024)                       0
+dense2 (Dense)                            (None, 512)                  524,288
+dense2_bn (BatchNormalization)            (None, 512)                    2,048
+dense2_relu (ReLU)                        (None, 512)                        0
+dense2_dropout (Dropout)                  (None, 512)                        0
+dense3 (Dense)                            (None, 256)                  131,072
+dense3_bn (BatchNormalization)            (None, 256)                    1,024
+dense3_relu (ReLU)                        (None, 256)                        0
+dense3_dropout (Dropout)                  (None, 256)                        0
+output (Dense)                            (None, 10)                     2,570
+------------------------------------------------------------------------------
+Total params: 3,810,826
+Trainable params: 3,807,242
+Non-trainable params: 3,584
+
+Model: D05_4_1024-512-256-128
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+flatten (Flatten)                         (None, 3072)                       0
+dense1 (Dense)                            (None, 1024)               3,145,728
+dense1_bn (BatchNormalization)            (None, 1024)                   4,096
+dense1_relu (ReLU)                        (None, 1024)                       0
+dense1_dropout (Dropout)                  (None, 1024)                       0
+dense2 (Dense)                            (None, 512)                  524,288
+dense2_bn (BatchNormalization)            (None, 512)                    2,048
+dense2_relu (ReLU)                        (None, 512)                        0
+dense2_dropout (Dropout)                  (None, 512)                        0
+dense3 (Dense)                            (None, 256)                  131,072
+dense3_bn (BatchNormalization)            (None, 256)                    1,024
+dense3_relu (ReLU)                        (None, 256)                        0
+dense3_dropout (Dropout)                  (None, 256)                        0
+dense4 (Dense)                            (None, 128)                   32,768
+dense4_bn (BatchNormalization)            (None, 128)                      512
+dense4_relu (ReLU)                        (None, 128)                        0
+dense4_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 3,842,826
+Trainable params: 3,838,986
+Non-trainable params: 3,840
+
+Model: C01_2conv_3x3_64
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+conv1 (Conv2D)                            (None, 32, 32, 64)             1,728
+conv1_bn (BatchNormalization)             (None, 32, 32, 64)               256
+conv1_relu (ReLU)                         (None, 32, 32, 64)                 0
+pool1 (MaxPooling2D)                      (None, 16, 16, 64)                 0
+conv2 (Conv2D)                            (None, 16, 16, 64)            36,864
+conv2_bn (BatchNormalization)             (None, 16, 16, 64)               256
+conv2_relu (ReLU)                         (None, 16, 16, 64)                 0
+pool2 (MaxPooling2D)                      (None, 8, 8, 64)                   0
+flatten (Flatten)                         (None, 4096)                       0
+dense1 (Dense)                            (None, 128)                  524,288
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_relu (ReLU)                        (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 565,194
+Trainable params: 564,682
+Non-trainable params: 512
+
+Model: C02_3conv_3x3_64
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+conv1 (Conv2D)                            (None, 32, 32, 64)             1,728
+conv1_bn (BatchNormalization)             (None, 32, 32, 64)               256
+conv1_leaky_relu (LeakyReLU)              (None, 32, 32, 64)                 0
+pool1 (MaxPooling2D)                      (None, 16, 16, 64)                 0
+conv2 (Conv2D)                            (None, 16, 16, 64)            36,864
+conv2_bn (BatchNormalization)             (None, 16, 16, 64)               256
+conv2_leaky_relu (LeakyReLU)              (None, 16, 16, 64)                 0
+pool2 (MaxPooling2D)                      (None, 8, 8, 64)                   0
+conv3 (Conv2D)                            (None, 8, 8, 64)              36,864
+conv3_bn (BatchNormalization)             (None, 8, 8, 64)                 256
+conv3_leaky_relu (LeakyReLU)              (None, 8, 8, 64)                   0
+pool3 (MaxPooling2D)                      (None, 4, 4, 64)                   0
+flatten (Flatten)                         (None, 1024)                       0
+dense1 (Dense)                            (None, 128)                  131,072
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_leaky_relu (LeakyReLU)             (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 209,098
+Trainable params: 208,458
+Non-trainable params: 640
+
+Model: C03_2conv_5x5_128
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+conv1 (Conv2D)                            (None, 32, 32, 128)            9,600
+conv1_bn (BatchNormalization)             (None, 32, 32, 128)              512
+conv1_relu (ReLU)                         (None, 32, 32, 128)                0
+pool1 (MaxPooling2D)                      (None, 16, 16, 128)                0
+conv2 (Conv2D)                            (None, 16, 16, 128)          409,600
+conv2_bn (BatchNormalization)             (None, 16, 16, 128)              512
+conv2_relu (ReLU)                         (None, 16, 16, 128)                0
+pool2 (MaxPooling2D)                      (None, 8, 8, 128)                  0
+flatten (Flatten)                         (None, 8192)                       0
+dense1 (Dense)                            (None, 128)                1,048,576
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_relu (ReLU)                        (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 1,470,602
+Trainable params: 1,469,834
+Non-trainable params: 768
+
+Model: C04_3conv_5x5_128
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+conv1 (Conv2D)                            (None, 32, 32, 128)            9,600
+conv1_bn (BatchNormalization)             (None, 32, 32, 128)              512
+conv1_relu (ReLU)                         (None, 32, 32, 128)                0
+pool1 (MaxPooling2D)                      (None, 16, 16, 128)                0
+conv2 (Conv2D)                            (None, 16, 16, 128)          409,600
+conv2_bn (BatchNormalization)             (None, 16, 16, 128)              512
+conv2_relu (ReLU)                         (None, 16, 16, 128)                0
+pool2 (MaxPooling2D)                      (None, 8, 8, 128)                  0
+conv3 (Conv2D)                            (None, 8, 8, 128)            409,600
+conv3_bn (BatchNormalization)             (None, 8, 8, 128)                512
+conv3_relu (ReLU)                         (None, 8, 8, 128)                  0
+pool3 (MaxPooling2D)                      (None, 4, 4, 128)                  0
+flatten (Flatten)                         (None, 2048)                       0
+dense1 (Dense)                            (None, 128)                  262,144
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_relu (ReLU)                        (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 1,094,282
+Trainable params: 1,093,258
+Non-trainable params: 1,024
+
+Model: C05_2conv_3x3_128_s2
+Layer (type)                              Output Shape                 Param #
+------------------------------------------------------------------------------
+conv1 (Conv2D)                            (None, 16, 16, 128)            3,456
+conv1_bn (BatchNormalization)             (None, 16, 16, 128)              512
+conv1_relu (ReLU)                         (None, 16, 16, 128)                0
+pool1 (MaxPooling2D)                      (None, 8, 8, 128)                  0
+conv2 (Conv2D)                            (None, 4, 4, 128)            147,456
+conv2_bn (BatchNormalization)             (None, 4, 4, 128)                512
+conv2_relu (ReLU)                         (None, 4, 4, 128)                  0
+pool2 (MaxPooling2D)                      (None, 2, 2, 128)                  0
+flatten (Flatten)                         (None, 512)                        0
+dense1 (Dense)                            (None, 128)                   65,536
+dense1_bn (BatchNormalization)            (None, 128)                      512
+dense1_relu (ReLU)                        (None, 128)                        0
+dense1_dropout (Dropout)                  (None, 128)                        0
+output (Dense)                            (None, 10)                     1,290
+------------------------------------------------------------------------------
+Total params: 219,274
+Trainable params: 218,506
+Non-trainable params: 768
