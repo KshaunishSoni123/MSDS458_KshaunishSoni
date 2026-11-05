@@ -1,0 +1,4 @@
+model,family,parameters_m,n_problems,corpus_bleu,mean_sentence_bleu,syntax_validity_pct,training_time_s,inference_time_s,total_time_s
+encoder_decoder,from scratch,1.49,500,11.08,10.38,14.8,42.1,9.7,51.9
+decoder_only_autoregressive,from scratch,1.36,500,6.82,6.73,25.8,70.3,28.0,98.2
+decoder_only,from scratch,1.36,500,0.37,1.6,0.2,87.8,0.6,88.4
