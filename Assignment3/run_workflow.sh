@@ -28,14 +28,13 @@ import torch
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 print(f">> torch {torch.__version__}, device: {device}")
 if device != "cuda":
-    print(">> No CUDA GPU: the pretrained LLMs will be skipped (they need a GPU); "
-          "the from-scratch transformers will run. Run --only pretrained on a GPU machine.")
+    print(">> No CUDA GPU: models run on the Mac GPU (MPS); any model over 8 GB is skipped.")
 PY
 
-# CodeLlama models are gated: accept Meta's license on Hugging Face, then log in once.
+# Logging in avoids Hub rate limits (and is required for gated models such as CodeLlama).
 if [[ -z "${HF_TOKEN:-}" ]] && ! "$VENV/bin/python" -c \
         "from huggingface_hub import get_token; import sys; sys.exit(get_token() is None)"; then
-    echo ">> Not logged in to Hugging Face. CodeLlama downloads will fail until you run:"
+    echo ">> Not logged in to Hugging Face (optional for the default models). To log in:"
     echo "     $VENV/bin/hf auth login     (or export HF_TOKEN=...)"
 fi
 

@@ -5,13 +5,17 @@ Data: MBPP ("Mostly Basic Python Problems", google-research-datasets/mbpp, confi
 (`text`), a reference solution (`code`) and three assert tests (`test_list`).
 Splits: prompt (10), train (374), validation (90), test (500).
 
-Pretrained models (MODELS), evaluated with no training:
-    base        bigcode/starcoder2-7b
-                deepseek-ai/deepseek-coder-6.7b-base
-                meta-llama/CodeLlama-7b-hf
-    instruct    deepseek-ai/deepseek-coder-6.7b-instruct
-                meta-llama/CodeLlama-7b-Instruct-hf
-                microsoft/Phi-3-mini-4k-instruct (3.8B)
+Pretrained models (MODELS), evaluated with no training. Small (1.3-3B) models so
+the whole workflow runs on a 16 GB Apple Silicon Mac:
+    base        bigcode/starcoder2-3b                  (3B)
+                deepseek-ai/deepseek-coder-1.3b-base   (1.3B)
+                Qwen/Qwen2.5-Coder-1.5B                (1.5B)
+    instruct    deepseek-ai/deepseek-coder-1.3b-instruct
+                Qwen/Qwen2.5-Coder-1.5B-Instruct
+                Qwen/Qwen2.5-Coder-3B-Instruct         (3B; 1.5B vs 3B shows the effect of size)
+(CodeLlama is not included: its smallest version is 7B. Phi-3-mini (3.8B) stalled on a
+16 GB Mac. LARGE_MODELS lists these larger models; they need a CUDA GPU: pass them with
+--models on Colab/Kaggle.)
 From-scratch models: the three small transformers in Assignment03_transformer_models.py
 (encoder-decoder, decoder-only, autoregressive decoder-only) are trained on MBPP and
 scored the same way. One call to this file runs all nine models.
@@ -55,24 +59,27 @@ not re-run (use --overwrite to regenerate); its timing is read from the
 last saved summary CSV is used for the comparison, so the pretrained models can run on
 a GPU and the from-scratch models on a Mac.
 
-Hardware: a 7B model needs ~14 GB in fp16, so run on a CUDA GPU (Colab A100/L4, or
-T4 with --4bit). It will not fit on a 16 GB Mac, so without CUDA the pretrained models
-are skipped (their last saved results are used) unless --force-pretrained is given.
+Hardware: models run in fp16 on a CUDA GPU or Apple Silicon (MPS). Without CUDA, a
+model whose fp16 weights exceed MAC_MAX_MODEL_GIB is skipped (a 7B model needs ~14 GB
+and would swap on a 16 GB Mac) unless --force-pretrained is given. On CUDA, a model
+that does not fit the GPU(s) is loaded in 4-bit automatically, and a batch that runs
+out of memory is retried with half the batch size.
 
-    pip install torch transformers accelerate datasets sacrebleu pandas matplotlib
-    pip install bitsandbytes            # only for --4bit
-    huggingface-cli login               # CodeLlama requires accepting Meta's license
+    pip install -r requirements.txt     # or ./run_workflow.sh, which also makes a venv
 
     python Assignment03_KshaunishSoni.py                  # all 9 models, full test split
     python Assignment03_KshaunishSoni.py --quick          # smoke test (20 problems, 2 epochs)
-    python Assignment03_KshaunishSoni.py --only scratch   # just the from-scratch models (Mac)
-    python Assignment03_KshaunishSoni.py --only pretrained --models microsoft/Phi-3-mini-4k-instruct
+    python Assignment03_KshaunishSoni.py --only scratch   # just the from-scratch models
+    python Assignment03_KshaunishSoni.py --only pretrained --models Qwen/Qwen2.5-Coder-3B-Instruct
 """
 
 import argparse
 import gc
 import json
 import os
+
+# Let PyTorch grow memory segments instead of fragmenting (fewer CUDA OOMs during generation)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 import sys
 import time
 
@@ -92,13 +99,25 @@ import matplotlib.pyplot as plt
 # Configuration
 # ----------------------------------------------------------------------------
 MODELS = [
+    "bigcode/starcoder2-3b",
+    "deepseek-ai/deepseek-coder-1.3b-base",
+    "Qwen/Qwen2.5-Coder-1.5B",
+    "deepseek-ai/deepseek-coder-1.3b-instruct",
+    "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "Qwen/Qwen2.5-Coder-3B-Instruct",
+]
+
+# 7B versions (CUDA GPU only), e.g. --models bigcode/starcoder2-7b meta-llama/CodeLlama-7b-hf
+LARGE_MODELS = [
     "bigcode/starcoder2-7b",
     "deepseek-ai/deepseek-coder-6.7b-base",
     "meta-llama/CodeLlama-7b-hf",
     "deepseek-ai/deepseek-coder-6.7b-instruct",
     "meta-llama/CodeLlama-7b-Instruct-hf",
-    "microsoft/Phi-3-mini-4k-instruct",
+    "microsoft/Phi-3-mini-4k-instruct",    # 3.8B: fits the 8 GiB limit but stalls on a 16 GB Mac
 ]
+
+MAC_MAX_MODEL_GIB = 8.0   # largest fp16 model run without CUDA (16 GB unified memory)
 
 
 def model_family(model_id):
@@ -110,7 +129,7 @@ CONFIG = {
     "eval_split": "test",
     "n_shot": 3,                # few-shot examples taken from the "prompt" split
     "max_new_tokens": 384,
-    "batch_size": 8,
+    "batch_size": {"cuda": 8, "mps": 4, "cpu": 2},   # default per device
     "stop_string": "[DONE]",
 }
 
@@ -173,6 +192,24 @@ def pick_device():
     return "cpu"
 
 
+GPU_HEADROOM_GIB = 4.0    # per-GPU memory kept free for activations and the KV cache
+
+
+def gpu_memory_gib():
+    return [torch.cuda.get_device_properties(i).total_memory / 2**30
+            for i in range(torch.cuda.device_count())]
+
+
+def model_size_gib(model_id):
+    """fp16 weight size from the Hub's safetensors metadata (None if unavailable)."""
+    try:
+        from huggingface_hub import HfApi
+        info = HfApi().model_info(model_id)
+        return info.safetensors.total * 2 / 2**30 if info.safetensors else None
+    except Exception:
+        return None
+
+
 def load_model(model_id, load_4bit=False):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.padding_side = "left"            # decoder-only models pad on the left
@@ -181,6 +218,19 @@ def load_model(model_id, load_4bit=False):
 
     device = pick_device()
     kwargs = {"torch_dtype": torch.float16 if device != "cpu" else torch.float32}
+    if device == "cuda":
+        gpus = gpu_memory_gib()
+        usable = sum(max(g - GPU_HEADROOM_GIB, 1) for g in gpus)
+        size = model_size_gib(model_id)
+        print(f"  {len(gpus)} GPU(s): {', '.join(f'{g:.1f}' for g in gpus)} GiB; "
+              f"fp16 weights ~{size:.1f} GiB" if size else f"  {len(gpus)} GPU(s)")
+        if not load_4bit and size and size > usable:
+            print(f"  fp16 weights don't fit in {usable:.1f} GiB (after {GPU_HEADROOM_GIB:.0f} GiB "
+                  f"headroom per GPU): loading in 4-bit instead")
+            load_4bit = True
+        # cap each GPU so the KV cache has room; device_map="auto" balances across GPUs
+        kwargs["max_memory"] = {i: f"{max(g - GPU_HEADROOM_GIB, 1):.0f}GiB"
+                                for i, g in enumerate(gpus)}
     if load_4bit:
         from transformers import BitsAndBytesConfig
         kwargs["quantization_config"] = BitsAndBytesConfig(
@@ -197,29 +247,52 @@ def load_model(model_id, load_4bit=False):
     return tokenizer, model
 
 
+def free_device_memory():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif torch.backends.mps.is_available():
+        torch.mps.empty_cache()
+
+
 @torch.no_grad()
 def generate(tokenizer, model, prompts, batch_size, max_new_tokens):
     """Greedy decoding in batches; prompts are length-sorted to reduce padding."""
+    """If a batch runs out of GPU memory, the batch size is halved and the batch retried."""
     order = sorted(range(len(prompts)), key=lambda i: len(prompts[i]))
     outputs = [None] * len(prompts)
-    start = time.time()
-    for b in range(0, len(order), batch_size):
+    start, b = time.time(), 0
+    while b < len(order):
         idx = order[b:b + batch_size]
-        enc = tokenizer([prompts[i] for i in idx], return_tensors="pt",
-                        padding=True).to(model.device)
-        out = model.generate(
-            **enc,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            stop_strings=[CONFIG["stop_string"]],
-            tokenizer=tokenizer,
-            pad_token_id=tokenizer.pad_token_id,
-        )
-        new_tokens = out[:, enc["input_ids"].shape[1]:]
-        for i, text in zip(idx, tokenizer.batch_decode(new_tokens, skip_special_tokens=True)):
+        try:
+            enc = tokenizer([prompts[i] for i in idx], return_tensors="pt",
+                            padding=True).to(model.device)
+            out = model.generate(
+                **enc,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                stop_strings=[CONFIG["stop_string"]],
+                tokenizer=tokenizer,
+                pad_token_id=tokenizer.pad_token_id,
+            )
+            new_tokens = out[:, enc["input_ids"].shape[1]:]
+            texts = tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+        except (torch.cuda.OutOfMemoryError, RuntimeError) as err:
+            if batch_size == 1 or "out of memory" not in str(err).lower():
+                raise
+            oom = True
+        else:
+            oom = False
+        if oom:   # outside the except block, so the failed batch's tensors can be freed
+            enc = out = None
+            free_device_memory()
+            batch_size = max(1, batch_size // 2)
+            print(f"  out of GPU memory: retrying with batch size {batch_size}", flush=True)
+            continue
+        for i, text in zip(idx, texts):
             outputs[i] = text
-        done = min(b + batch_size, len(order))
-        print(f"  {done}/{len(order)} generated ({time.time() - start:.0f}s)", flush=True)
+        b += len(idx)
+        print(f"  {b}/{len(order)} generated ({time.time() - start:.0f}s)", flush=True)
     return outputs
 
 
@@ -279,22 +352,28 @@ def run_model(model_id, eval_split, prompts, args):
                 info = json.load(f)
         return score_generations(pd.read_json(path, lines=True)), info
 
+    if pick_device() != "cuda" and not args.force_pretrained:
+        size = model_size_gib(model_id)
+        if size and size > MAC_MAX_MODEL_GIB:
+            print(f"[{model_id}] skipped: fp16 weights ~{size:.1f} GiB > {MAC_MAX_MODEL_GIB:.0f} GiB "
+                  f"limit without CUDA (run it on a GPU, or pass --force-pretrained)")
+            return None, None
+
     print(f"[{model_id}] loading model")
     start = time.time()
     tokenizer, model = load_model(model_id, load_4bit=args.load_4bit)
     load_s = time.time() - start
     n_params = model.num_parameters()
     start = time.time()
-    raw = generate(tokenizer, model, prompts, args.batch_size, CONFIG["max_new_tokens"])
+    batch_size = args.batch_size or CONFIG["batch_size"][pick_device()]
+    raw = generate(tokenizer, model, prompts, batch_size, CONFIG["max_new_tokens"])
     info = {"parameters_m": round(n_params / 1e6, 1), "load_time_s": round(load_s, 1),
             "inference_time_s": round(time.time() - start, 1)}
     with open(info_path, "w") as f:
         json.dump(info, f)
 
     del model
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    free_device_memory()
 
     rows = []
     for ex, prompt, gen in zip(eval_split, prompts, raw):
@@ -406,14 +485,15 @@ def parse_args(argv=None):
                    help="run only one family; the other's last saved summary is reused")
     p.add_argument("--models", nargs="+", default=MODELS, help="pretrained models to run")
     p.add_argument("--force-pretrained", action="store_true",
-                   help="run the pretrained models even without a CUDA GPU (very slow)")
+                   help=f"without CUDA, also run models over {MAC_MAX_MODEL_GIB:.0f} GiB (very slow)")
     p.add_argument("--quick", action="store_true",
                    help="smoke test: 20 problems for pretrained models, --quick for scratch models")
     p.add_argument("--split", default=CONFIG["eval_split"],
                    choices=["test", "validation", "train"])
     p.add_argument("--limit", type=int, default=None,
                    help="evaluate only the first N problems (smoke test)")
-    p.add_argument("--batch-size", type=int, default=CONFIG["batch_size"])
+    p.add_argument("--batch-size", type=int, default=None,
+                   help="generation batch size (default: 8 on CUDA, 4 on Mac MPS, 2 on CPU)")
     p.add_argument("--4bit", dest="load_4bit", action="store_true",
                    help="load models in 4-bit (bitsandbytes) to fit a 16 GB GPU")
     p.add_argument("--overwrite", action="store_true",
@@ -441,6 +521,8 @@ def run_pretrained(args):
     per_model, summary_rows = {}, []
     for model_id in args.models:
         df, info = run_model(model_id, eval_split, prompts, args)
+        if df is None:
+            continue
         per_model[model_id] = df
         load_s, infer_s = info.get("load_time_s"), info.get("inference_time_s")
         summary_rows.append({
@@ -484,14 +566,7 @@ def main(argv=None):
     os.makedirs(RESULTS_DIR, exist_ok=True)
     start = time.time()
 
-    run_llms = args.only in ("all", "pretrained")
-    if run_llms and not torch.cuda.is_available() and not args.force_pretrained:
-        # A 7B model in fp16 needs ~14 GB; on a 16 GB Mac it swaps and effectively hangs.
-        print("\n>> No CUDA GPU found: skipping the pretrained LLMs (they need ~8-14 GB of GPU "
-              "memory each).\n>> Run with --only pretrained on a GPU machine (e.g. Colab), or "
-              "pass --force-pretrained to try anyway.\n")
-        run_llms = False
-    pretrained = (run_pretrained(args) if run_llms
+    pretrained = (run_pretrained(args) if args.only in ("all", "pretrained")
                   else load_saved("pretrained_metrics_summary.csv", "pretrained"))
     scratch = (run_scratch(args) if args.only in ("all", "scratch")
                else load_saved("scratch_metrics_summary.csv", "from-scratch"))
