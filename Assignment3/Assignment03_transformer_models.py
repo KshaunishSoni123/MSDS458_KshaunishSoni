@@ -1,6 +1,6 @@
 """Assignment 3, part 2: small transformers built from scratch for code generation on MBPP.
 
-Assignment03_KshaunishSoni.py evaluates large pretrained code LLMs (~7B parameters).
+Assignment03_KshaunishSoni.py evaluates pretrained code LLMs (1.3-3B parameters).
 This file builds three deliberately tiny transformers (~1-2M parameters) from scratch,
 trains them on MBPP only, and scores them on the same 500 test problems with the same
 metrics (corpus / sentence BLEU, syntax validity score), as a baseline for comparison.
@@ -29,21 +29,33 @@ validation loss each epoch (the best epoch's weights are kept), test (500) for t
 final scores. The prompt is the task description plus its test asserts, as for the
 pretrained LLMs.
 
+Hyperparameter tuning: every experiment is trained once per combination in TUNING_GRID
+(learning rate x batch size x epochs; 3 x 3 x 2 = 18 runs, ~1 min each on a Mac).
+Each run uses its own warmup + cosine schedule over its own number of epochs, and is
+scored by its best validation loss. The run with the lowest validation loss is the
+one evaluated on the test split. The test split is never used for selection.
+--no-tune skips the search and trains once with TRAIN_CONFIG.
+
 Outputs (results/):
     generations_<experiment>_test500.jsonl   per-problem predictions and scores
     scratch_metrics_summary.csv              one row per experiment, incl. training,
                                              inference and total time (seconds)
-    scratch_training_history.csv             train / validation loss per epoch
-    scratch_loss_curves.png                  loss curves per experiment
+    scratch_training_history.csv             train / validation loss per epoch, every run
+    scratch_tuning.csv                       one row per hyperparameter combination:
+                                             best validation loss, best epoch, time
+    scratch_tuning_heatmap.png               validation loss over learning rate x batch size
+    scratch_loss_curves.png                  loss curves of the selected configuration
 Running Assignment03_KshaunishSoni.py runs these experiments too and adds them to the
 all-model comparison; this file can also be run on its own:
 
     python Assignment03_transformer_models.py            # all three experiments
     python Assignment03_transformer_models.py --quick    # smoke test: 2 epochs, 20 test problems
+    python Assignment03_transformer_models.py --no-tune  # one run per experiment, TRAIN_CONFIG
 """
 
 import argparse
 import copy
+import itertools
 import math
 import os
 import random
@@ -90,7 +102,15 @@ TRAIN_CONFIG = {
     "seed": 42,
 }
 
+# Grid searched for every experiment; the selected values replace those in TRAIN_CONFIG
+TUNING_GRID = {
+    "learning_rate": [3e-4, 1e-3, 3e-3],
+    "batch_size": [8, 16, 32],
+    "epochs": [20, 40],
+}
+
 QUICK_CONFIG = {"epochs": 2, "test_limit": 20}
+QUICK_GRID = {"learning_rate": [1e-3, 3e-3], "batch_size": [16], "epochs": [2]}
 
 TOKENIZER_VOCAB = 2000
 SPECIALS = ["<pad>", "<bos>", "<eos>", "<sep>", "<mask>"]
@@ -404,29 +424,68 @@ def train(model, spec, train_pairs, val_pairs, cfg, device, name):
         if val_loss < best_val:
             best_val, best_epoch = val_loss, epoch
             best_state = copy.deepcopy({k: v.detach().cpu() for k, v in model.state_dict().items()})
-        history.append({"experiment": name, "epoch": epoch, "train_loss": train_loss,
+        history.append({"experiment": name, "learning_rate": cfg["learning_rate"],
+                        "batch_size": cfg["batch_size"], "epochs": cfg["epochs"],
+                        "epoch": epoch, "train_loss": train_loss,
                         "val_loss": val_loss, "seconds": time.time() - start})
         print(f"  epoch {epoch:2d}/{cfg['epochs']}  train {train_loss:.3f}  val {val_loss:.3f}"
               f"{'  *best' if best_epoch == epoch else ''}  ({time.time() - start:.1f}s)", flush=True)
 
     model.load_state_dict(best_state)
     print(f"  restored weights from epoch {best_epoch} (val loss {best_val:.3f})")
-    return history
+    return history, best_val, best_epoch
 
 
 # ----------------------------------------------------------------------------
 # Experiments
 # ----------------------------------------------------------------------------
-def run_experiment(name, spec, tok, data, test_split, cfg, device):
+def grid_configs(base_cfg, grid):
+    """One training config per combination of the grid's values."""
+    keys = list(grid)
+    return [{**base_cfg, **dict(zip(keys, values))}
+            for values in itertools.product(*(grid[k] for k in keys))]
+
+
+def tune(name, spec, tok, data, base_cfg, grid, device):
+    """Train once per grid combination; keep the model with the lowest validation loss.
+    Returns (best model, its config, its history, all histories, tuning table)."""
+    configs = grid_configs(base_cfg, grid)
+    best, histories, rows = None, [], []
+    tune_start = time.time()
+    for i, cfg in enumerate(configs, 1):
+        print(f"\n  [{name}] run {i}/{len(configs)}: lr {cfg['learning_rate']:g}, "
+              f"batch {cfg['batch_size']}, epochs {cfg['epochs']}")
+        set_seed(cfg["seed"])
+        model = build_model(spec, tok.get_vocab_size(), cfg).to(device)
+        start = time.time()
+        history, val, epoch = train(model, spec, data["train"], data["validation"], cfg, device, name)
+        seconds = time.time() - start
+        histories += history
+        rows.append({"experiment": name, "learning_rate": cfg["learning_rate"],
+                     "batch_size": cfg["batch_size"], "epochs": cfg["epochs"],
+                     "best_val_loss": round(val, 4), "best_epoch": epoch,
+                     "train_time_s": round(seconds, 1)})
+        if best is None or val < best[2]:
+            best = (model, cfg, val, history, seconds)
+        else:
+            del model
+    model, cfg, val, history, train_s = best
+    table = pd.DataFrame(rows)
+    table["selected"] = ((table["learning_rate"] == cfg["learning_rate"])
+                         & (table["batch_size"] == cfg["batch_size"])
+                         & (table["epochs"] == cfg["epochs"]))
+    print(f"\n  [{name}] selected lr {cfg['learning_rate']:g}, batch {cfg['batch_size']}, "
+          f"epochs {cfg['epochs']} (val loss {val:.3f}; {len(configs)} runs, "
+          f"{time.time() - tune_start:.0f}s)")
+    return model, cfg, history, histories, table, train_s, time.time() - tune_start
+
+
+def run_experiment(name, spec, tok, data, test_split, base_cfg, grid, device):
     print(f"\n=== {name} ===")
-    set_seed(cfg["seed"])
-    model = build_model(spec, tok.get_vocab_size(), cfg).to(device)
+    model, cfg, history, all_history, tuning, train_s, tune_s = tune(
+        name, spec, tok, data, base_cfg, grid, device)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"  {n_params / 1e6:.2f}M parameters")
-
-    start = time.time()
-    history = train(model, spec, data["train"], data["validation"], cfg, device, name)
-    train_s = time.time() - start
 
     start = time.time()
     preds = generate(spec, model, [s for s, _ in data["test"]], cfg, device)
@@ -440,11 +499,14 @@ def run_experiment(name, spec, tok, data, test_split, cfg, device):
                orient="records", lines=True)
     infer_s = time.time() - start
     row = {**summarise(name, df), "family": "from scratch",
-           "parameters_m": round(n_params / 1e6, 2), "training_time_s": round(train_s, 1),
-           "inference_time_s": round(infer_s, 1), "total_time_s": round(train_s + infer_s, 1)}
+           "parameters_m": round(n_params / 1e6, 2),
+           "learning_rate": cfg["learning_rate"], "batch_size": cfg["batch_size"],
+           "epochs": cfg["epochs"], "best_val_loss": round(tuning["best_val_loss"].min(), 4),
+           "training_time_s": round(train_s, 1), "tuning_time_s": round(tune_s, 1),
+           "inference_time_s": round(infer_s, 1), "total_time_s": round(tune_s + infer_s, 1)}
     print(f"  corpus BLEU {row['corpus_bleu']:.2f}  syntax validity "
-          f"{row['syntax_validity_pct']:.1f}%  (training {train_s:.0f}s, generation {infer_s:.0f}s)")
-    return row, history
+          f"{row['syntax_validity_pct']:.1f}%  (tuning {tune_s:.0f}s, generation {infer_s:.0f}s)")
+    return row, history, all_history, tuning
 
 
 # ----------------------------------------------------------------------------
@@ -473,6 +535,49 @@ def plot_loss_curves(history):
     plt.close(fig)
 
 
+def plot_tuning_heatmap(tuning, group_col, path, title):
+    """One panel per model: best validation loss over learning rate x batch size.
+    Each cell is the best value over the epoch settings; the selected run is outlined."""
+    names = list(dict.fromkeys(tuning[group_col]))
+    cols = min(3, len(names))
+    rows_n = math.ceil(len(names) / cols)
+    fig, axes = plt.subplots(rows_n, cols, figsize=(4.3 * cols, 3.4 * rows_n), squeeze=False)
+    for ax in axes.flat[len(names):]:
+        ax.axis("off")
+    for ax, name in zip(axes.flat, names):
+        t = tuning[tuning[group_col] == name]
+        best = t.loc[t.groupby(["learning_rate", "batch_size"])["best_val_loss"].idxmin()]
+        grid = best.pivot(index="learning_rate", columns="batch_size", values="best_val_loss")
+        epochs = best.pivot(index="learning_rate", columns="batch_size", values="best_epoch")
+        # one hue, light -> dark; darker = lower (better) validation loss
+        im = ax.imshow(grid.values, cmap="Blues_r", aspect="auto")
+        lo, hi = np.nanmin(grid.values), np.nanmax(grid.values)
+        sel = t[t["selected"]].iloc[0]
+        for r, lr in enumerate(grid.index):
+            for c, bs in enumerate(grid.columns):
+                v = grid.loc[lr, bs]
+                if np.isnan(v):
+                    continue
+                dark = hi > lo and (v - lo) / (hi - lo) < 0.5
+                ax.text(c, r, f"{v:.3f}\nep {int(epochs.loc[lr, bs])}", ha="center",
+                        va="center", fontsize=8.5, color="white" if dark else INK)
+                if lr == sel["learning_rate"] and bs == sel["batch_size"]:
+                    ax.add_patch(plt.Rectangle((c - 0.5, r - 0.5), 1, 1, fill=False,
+                                               edgecolor="#d9822b", linewidth=2.5))
+        ax.set_xticks(range(len(grid.columns)), [str(b) for b in grid.columns])
+        ax.set_yticks(range(len(grid.index)), [f"{lr:g}" for lr in grid.index])
+        ax.set_xlabel("Batch size", color=INK)
+        ax.set_ylabel("Learning rate", color=INK)
+        ax.set_title(str(name).split("/")[-1], color=INK, loc="left", fontsize=10)
+        ax.tick_params(colors=INK)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+    fig.suptitle(title, color=INK, x=0.01, ha="left")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 # ----------------------------------------------------------------------------
 # Main
 # ----------------------------------------------------------------------------
@@ -480,7 +585,10 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--experiments", nargs="+", default=list(EXPERIMENTS),
                    choices=list(EXPERIMENTS))
-    p.add_argument("--epochs", type=int, default=None)
+    p.add_argument("--epochs", type=int, default=None,
+                   help="train for exactly this many epochs (replaces the epochs grid)")
+    p.add_argument("--no-tune", action="store_true",
+                   help="skip the hyperparameter search: one run per experiment with TRAIN_CONFIG")
     p.add_argument("--quick", action="store_true",
                    help=f"smoke test: {QUICK_CONFIG['epochs']} epochs, "
                         f"{QUICK_CONFIG['test_limit']} test problems")
@@ -490,13 +598,16 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     cfg = dict(TRAIN_CONFIG)
-    if args.quick:
-        cfg["epochs"] = QUICK_CONFIG["epochs"]
+    grid = dict(QUICK_GRID if args.quick else TUNING_GRID)
+    if args.no_tune:
+        grid = {k: [cfg[k]] for k in grid}
+        if args.quick:
+            grid["epochs"] = [QUICK_CONFIG["epochs"]]
     if args.epochs:
-        cfg["epochs"] = args.epochs
+        grid["epochs"] = [args.epochs]
     os.makedirs(RESULTS_DIR, exist_ok=True)
     device = pick_device()
-    print(f"Device: {device}\nModel: {MODEL_CONFIG}\nTraining: {cfg}")
+    print(f"Device: {device}\nModel: {MODEL_CONFIG}\nTraining: {cfg}\nTuning grid: {grid}")
 
     ds = load_mbpp()
     train_split = [*ds["train"], *ds["prompt"]]
@@ -515,19 +626,31 @@ def main(argv=None):
           f"{np.mean(np.array(src_lens) > cfg['max_src_len']):.1%}, "
           f"code truncated: {np.mean(np.array(tgt_lens) > cfg['max_tgt_len']):.1%}")
 
-    rows, histories = [], []
+    rows, selected, histories, tunings = [], [], [], []
     for name in args.experiments:
-        row, history = run_experiment(name, EXPERIMENTS[name], tok, data, test_split, cfg, device)
+        row, history, all_history, tuning = run_experiment(
+            name, EXPERIMENTS[name], tok, data, test_split, cfg, grid, device)
         rows.append(row)
-        histories += history
+        selected += history
+        histories += all_history
+        tunings.append(tuning)
 
     summary = pd.DataFrame(rows)
-    history = pd.DataFrame(histories)
+    tuning = pd.concat(tunings, ignore_index=True)
     summary.to_csv(os.path.join(RESULTS_DIR, "scratch_metrics_summary.csv"), index=False)
-    history.to_csv(os.path.join(RESULTS_DIR, "scratch_training_history.csv"), index=False)
-    plot_loss_curves(history)
-    cols = ["model", "parameters_m", "corpus_bleu", "mean_sentence_bleu",
-            "syntax_validity_pct", "training_time_s", "inference_time_s", "total_time_s"]
+    pd.DataFrame(histories).to_csv(os.path.join(RESULTS_DIR, "scratch_training_history.csv"),
+                                   index=False)
+    tuning.to_csv(os.path.join(RESULTS_DIR, "scratch_tuning.csv"), index=False)
+    plot_loss_curves(pd.DataFrame(selected))
+    plot_tuning_heatmap(tuning, "experiment",
+                        os.path.join(RESULTS_DIR, "scratch_tuning_heatmap.png"),
+                        "From-scratch transformers: best validation loss by learning rate and "
+                        "batch size (outlined = selected)")
+    print("\nHyperparameter search (best validation loss per run):\n",
+          tuning.to_string(index=False))
+    cols = ["model", "parameters_m", "learning_rate", "batch_size", "epochs",
+            "corpus_bleu", "mean_sentence_bleu", "syntax_validity_pct",
+            "tuning_time_s", "inference_time_s", "total_time_s"]
     print("\nFrom-scratch transformers:\n", summary[cols].to_string(index=False))
 
     print(f"\nResults written to {RESULTS_DIR}")

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Set up a virtual environment and run the end-to-end Assignment 3 workflow.
 #
-#   ./run_workflow.sh                  # all 9 models, full MBPP test split
-#   ./run_workflow.sh --quick          # smoke test (20 problems, 2 training epochs)
+#   ./run_workflow.sh                  # all models (few-shot, LoRA-tuned, from scratch)
+#   ./run_workflow.sh --quick          # smoke test (20 problems, tiny tuning grids)
+#   ./run_workflow.sh --only finetuned # just LoRA fine-tuning + hyperparameter search
 #   ./run_workflow.sh --only scratch   # just the from-scratch transformers (runs on a Mac)
 #   ./run_workflow.sh --setup-only     # create/update the venv, don't run anything
 #

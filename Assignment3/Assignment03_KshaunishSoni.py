@@ -10,15 +10,26 @@ the whole workflow runs on a 16 GB Apple Silicon Mac:
     base        bigcode/starcoder2-3b                  (3B)
                 deepseek-ai/deepseek-coder-1.3b-base   (1.3B)
                 Qwen/Qwen2.5-Coder-1.5B                (1.5B)
+                Qwen/Qwen2.5-Coder-3B                  (3B)
     instruct    deepseek-ai/deepseek-coder-1.3b-instruct
                 Qwen/Qwen2.5-Coder-1.5B-Instruct
-                Qwen/Qwen2.5-Coder-3B-Instruct         (3B; 1.5B vs 3B shows the effect of size)
+                Qwen/Qwen2.5-Coder-3B-Instruct         (3B)
+The four Qwen2.5-Coder models form a 2 x 2 design (1.5B vs 3B, base vs instruct), so
+the effects of size and of instruction tuning can be read separately.
 (CodeLlama is not included: its smallest version is 7B. Phi-3-mini (3.8B) stalled on a
 16 GB Mac. LARGE_MODELS lists these larger models; they need a CUDA GPU: pass them with
 --models on Colab/Kaggle.)
 From-scratch models: the three small transformers in Assignment03_transformer_models.py
 (encoder-decoder, decoder-only, autoregressive decoder-only) are trained on MBPP and
-scored the same way. One call to this file runs all nine models.
+scored the same way, after a grid search over learning rate, batch size and epochs.
+Fine-tuned models: every pretrained model is also LoRA fine-tuned on MBPP with the same
+kind of grid search (Assignment03_finetune.py), and its tuned version scored zero-shot.
+One call to this file runs all of them: 7 few-shot, 7 fine-tuned, 3 from scratch.
+
+Hyperparameter tuning (learning rate x batch size x epochs) is selected on the MBPP
+validation split (90 problems) by validation loss; the test split is only scored.
+Few-shot evaluation has no trainable hyperparameters (its batch size only changes
+speed), so for the pretrained models tuning means tuning their fine-tuning.
 
 Prompting: the standard MBPP few-shot format from the original paper
 (Austin et al., 2021). The task text and its tests are shown, and the model writes
@@ -45,14 +56,19 @@ Outputs (results/):
     generations_<model>_<split><n>.jsonl  task, reference, prediction, sentence BLEU,
                                syntax validity per problem
     pretrained_metrics_summary.csv  all BLEU / syntax metrics + timing, pretrained models
+    finetuned_metrics_summary.csv   the same for the LoRA fine-tuned models
     scratch_metrics_summary.csv     the same for the from-scratch models
-    model_comparison_summary.csv    every model: family, parameters, corpus BLEU, mean
-                                    sentence BLEU, syntax validity, training time,
-                                    inference time, total time (seconds)
+    finetuned_tuning.csv / scratch_tuning.csv   every hyperparameter combination tried
+    *_tuning_heatmap.png            validation loss over learning rate x batch size
+    model_comparison_summary.csv    every model: family, parameters, selected learning
+                                    rate / batch size / epochs, corpus BLEU, mean
+                                    sentence BLEU, syntax validity, training, tuning,
+                                    inference and total time (seconds)
     model_comparison.png            corpus BLEU and syntax validity, every model
     sentence_bleu_dist.png          distribution of per-problem BLEU, pretrained models
 Timing: pretrained models have no training (training_time_s = 0); their total time is
-model loading + generation. From-scratch models: total = training + generation.
+model loading + generation. Tuned models: total = the whole grid search + generation
+(training_time_s is the selected run alone for the from-scratch models).
 Generations are cached: a pretrained model whose generations file already exists is
 not re-run (use --overwrite to regenerate); its timing is read from the
 <generations>.info.json file saved with it. When one family is skipped (--only), its
@@ -67,9 +83,12 @@ out of memory is retried with half the batch size.
 
     pip install -r requirements.txt     # or ./run_workflow.sh, which also makes a venv
 
-    python Assignment03_KshaunishSoni.py                  # all 9 models, full test split
-    python Assignment03_KshaunishSoni.py --quick          # smoke test (20 problems, 2 epochs)
+    python Assignment03_KshaunishSoni.py                  # everything, full test split
+    python Assignment03_KshaunishSoni.py --quick          # smoke test (20 problems, tiny grids)
     python Assignment03_KshaunishSoni.py --only scratch   # just the from-scratch models
+    python Assignment03_KshaunishSoni.py --only finetuned # just LoRA fine-tuning + tuning
+    python Assignment03_KshaunishSoni.py --no-tune        # no grid search (defaults only;
+                                                          # skips LoRA fine-tuning)
     python Assignment03_KshaunishSoni.py --only pretrained --models Qwen/Qwen2.5-Coder-3B-Instruct
 """
 
@@ -102,6 +121,7 @@ MODELS = [
     "bigcode/starcoder2-3b",
     "deepseek-ai/deepseek-coder-1.3b-base",
     "Qwen/Qwen2.5-Coder-1.5B",
+    "Qwen/Qwen2.5-Coder-3B",
     "deepseek-ai/deepseek-coder-1.3b-instruct",
     "Qwen/Qwen2.5-Coder-1.5B-Instruct",
     "Qwen/Qwen2.5-Coder-3B-Instruct",
@@ -451,7 +471,8 @@ def plot_model_comparison(summary):
     ax1.set_title("Corpus BLEU", color=INK, loc="left")
     ax2.set_title("Syntax validity score", color=INK, loc="left")
     fig.suptitle(f"MBPP {CONFIG['eval_split']} split: pretrained LLMs "
-                 f"({CONFIG['n_shot']}-shot, greedy) and small transformers trained from scratch",
+                 f"({CONFIG['n_shot']}-shot), LoRA fine-tuned LLMs (0-shot) and small "
+                 f"transformers trained from scratch; greedy decoding",
                  color=INK, x=0.01, ha="left")
     fig.tight_layout()
     fig.savefig(os.path.join(RESULTS_DIR, "model_comparison.png"), dpi=150)
@@ -481,8 +502,12 @@ def plot_sentence_bleu(per_model):
 # ----------------------------------------------------------------------------
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--only", choices=["all", "pretrained", "scratch"], default="all",
-                   help="run only one family; the other's last saved summary is reused")
+    p.add_argument("--only", choices=["all", "pretrained", "finetuned", "scratch"],
+                   default="all",
+                   help="run only one family; the others' last saved summaries are reused")
+    p.add_argument("--no-tune", action="store_true",
+                   help="skip hyperparameter tuning: scratch models train once with defaults "
+                        "and LoRA fine-tuning is skipped")
     p.add_argument("--models", nargs="+", default=MODELS, help="pretrained models to run")
     p.add_argument("--force-pretrained", action="store_true",
                    help=f"without CUDA, also run models over {MAC_MAX_MODEL_GIB:.0f} GiB (very slow)")
@@ -502,8 +527,9 @@ def parse_args(argv=None):
     return p.parse_known_args(argv)[0]
 
 
-COMPARISON_COLUMNS = ["model", "family", "parameters_m", "n_problems", "corpus_bleu",
-                      "mean_sentence_bleu", "syntax_validity_pct", "training_time_s",
+COMPARISON_COLUMNS = ["model", "family", "parameters_m", "learning_rate", "batch_size",
+                      "epochs", "n_problems", "corpus_bleu", "mean_sentence_bleu",
+                      "syntax_validity_pct", "training_time_s", "tuning_time_s",
                       "inference_time_s", "total_time_s"]
 
 
@@ -545,8 +571,25 @@ def run_scratch(args):
     """Train and evaluate the from-scratch transformers (imported here, not at the top,
     because that file imports its data/scoring helpers from this one)."""
     from Assignment03_transformer_models import main as scratch_main
-    summary, _ = scratch_main(["--quick"] if args.quick else [])
+    flags = (["--quick"] if args.quick else []) + (["--no-tune"] if args.no_tune else [])
+    summary, _ = scratch_main(flags)
     return summary.assign(family="from scratch")
+
+
+def run_finetuned(args):
+    """LoRA fine-tune every pretrained model with a hyperparameter search
+    (imported here for the same reason as run_scratch)."""
+    from Assignment03_finetune import main as finetune_main
+    flags = ["--models", *args.models, "--split", args.split]
+    if args.quick:
+        flags.append("--quick")
+    if args.limit:
+        flags += ["--limit", str(args.limit)]
+    if args.batch_size:
+        flags += ["--batch-size", str(args.batch_size)]
+    if args.overwrite:
+        flags.append("--overwrite")
+    return finetune_main(flags)
 
 
 def load_saved(filename, family_hint):
@@ -568,13 +611,20 @@ def main(argv=None):
 
     pretrained = (run_pretrained(args) if args.only in ("all", "pretrained")
                   else load_saved("pretrained_metrics_summary.csv", "pretrained"))
+    if args.no_tune and args.only in ("all", "finetuned"):
+        print("(--no-tune: LoRA fine-tuning skipped)")
+        finetuned = None
+    else:
+        finetuned = (run_finetuned(args) if args.only in ("all", "finetuned")
+                     else load_saved("finetuned_metrics_summary.csv", "fine-tuned"))
     scratch = (run_scratch(args) if args.only in ("all", "scratch")
                else load_saved("scratch_metrics_summary.csv", "from-scratch"))
     if scratch is not None and "family" not in scratch:
         scratch = scratch.assign(family="from scratch")
 
-    comparison = pd.concat([t for t in (pretrained, scratch) if t is not None], ignore_index=True)
-    comparison = comparison[COMPARISON_COLUMNS].sort_values("corpus_bleu", ascending=False)
+    tables = [t for t in (pretrained, finetuned, scratch) if t is not None]
+    comparison = pd.concat(tables, ignore_index=True).reindex(columns=COMPARISON_COLUMNS)
+    comparison = comparison.sort_values("corpus_bleu", ascending=False)
     comparison.to_csv(os.path.join(RESULTS_DIR, "model_comparison_summary.csv"), index=False)
     plot_model_comparison(comparison)
 

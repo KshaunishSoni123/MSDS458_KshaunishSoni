@@ -3,6 +3,7 @@
 
 torch>=2.3                  # tested 2.13.0 (CUDA on Linux/Colab, MPS on Mac)
 transformers>=4.45          # tested 5.22.1 (needs stop_strings, Starcoder2, Phi-3 support)
+peft>=0.13                  # tested 0.21.2 (LoRA fine-tuning)
 accelerate>=0.30            # tested 1.15.0 (device_map="auto")
 tokenizers>=0.19            # tested 0.23.3 (BPE tokenizer for the from-scratch models)
 datasets>=2.19              # tested 5.1.0  (MBPP from the Hugging Face Hub)
