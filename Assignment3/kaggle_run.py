@@ -25,8 +25,8 @@ Kaggle setup
     Optional: Add-ons > Secrets > HF_TOKEN (avoids Hub rate limits).
     Optional: upload your local Assignment3/results/ folder as a Kaggle dataset and
               attach it, so the 6 few-shot models already run on your Mac are reused.
-    Notebook cell:
-        !git clone -q https://github.com/KshaunishSoni123/MSDS458_KshaunishSoni.git /kaggle/working/repo
+    Notebook cell (safe to rerun: clones once, then pulls; always absolute paths):
+        !cd /kaggle/working && ( [ -d repo ] && git -C repo pull -q || git clone -q https://github.com/KshaunishSoni123/MSDS458_KshaunishSoni.git repo )
         !python /kaggle/working/repo/Assignment3/kaggle_run.py
     For a run of several hours use "Save Version > Save & Run All (Commit)": it runs in
     the background (up to 12 h) and keeps /kaggle/working as the version's output.
@@ -67,9 +67,9 @@ def find_code_dir(repo):
     here = os.path.dirname(os.path.abspath(__file__))
     if os.path.exists(os.path.join(here, MAIN)) and here.startswith(WORKING):
         return here                                         # running from a clone already
-    hits = glob.glob(os.path.join(WORKING, "**", MAIN), recursive=True)
+    hits = sorted(glob.glob(os.path.join(WORKING, "**", MAIN), recursive=True), key=len)
     if hits:
-        return os.path.dirname(hits[0])
+        return os.path.dirname(hits[0])     # shallowest copy if it was cloned more than once
     hits = glob.glob(os.path.join("/kaggle/input", "**", MAIN), recursive=True)
     if hits:                                                # read-only dataset: copy it
         dest = os.path.join(WORKING, "Assignment3")
@@ -98,6 +98,10 @@ def seed_results(results_dir):
 
 def install():
     sh(f"{sys.executable} -m pip install -q 'peft>=0.13' 'sacrebleu>=2.4'")
+    # Kaggle's image ships torchao 0.10; recent peft refuses to build LoRA layers when an
+    # old torchao is installed ("only versions above 0.16.0 are supported"). Nothing here
+    # uses torchao (it is for quantized training), so remove it.
+    sh(f"{sys.executable} -m pip uninstall -y -q torchao || true")
     import transformers
     major, minor = (int(x) for x in transformers.__version__.split(".")[:2])
     if (major, minor) < (4, 45):
@@ -218,7 +222,11 @@ def finalize(models, quick, skip, code_dir):
     flags = ["--only", "finetuned", "--models", *models] + (["--quick"] if quick else [])
     if "finetune" in skip:
         flags.append("--no-tune")
-    sh(" ".join([sys.executable, MAIN, *flags]), cwd=code_dir)
+    try:
+        sh(" ".join([sys.executable, MAIN, *flags]), cwd=code_dir)
+    except subprocess.CalledProcessError as err:   # still zip whatever finished
+        print(f"\nFinal summary step failed (exit {err.returncode}); see the error above "
+              f"and the logs. Finished models are cached: rerun to complete.")
 
 
 def main():
