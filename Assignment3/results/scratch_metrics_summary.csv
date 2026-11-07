@@ -1,4 +1,4 @@
 model,n_problems,corpus_bleu,mean_sentence_bleu,median_sentence_bleu,precision_1gram,precision_2gram,precision_3gram,precision_4gram,brevity_penalty,hyp_ref_length_ratio,syntax_validity_pct,syntax_errors,empty_predictions,family,parameters_m,learning_rate,batch_size,epochs,best_val_loss,training_time_s,tuning_time_s,inference_time_s,total_time_s
-encoder_decoder,20,2.32,2.39,1.89,16.63,4.51,1.26,0.3,1.0,3.137,0.0,20,0,from scratch,1.49,0.003,16,2,4.7293,1.3,3.3,0.9,4.3
-decoder_only,20,0.05,0.26,0.26,2.24,0.03,0.01,0.01,1.0,3.274,0.0,20,0,from scratch,1.36,0.001,16,2,5.4632,2.2,4.3,0.0,4.4
-decoder_only_autoregressive,20,2.0,2.2,2.03,14.81,4.04,1.18,0.23,1.0,2.699,0.0,20,0,from scratch,1.36,0.003,16,2,4.7174,1.6,3.2,11.6,14.8
+encoder_decoder,500,11.66,10.26,6.91,48.73,22.05,12.15,6.71,0.678,0.72,9.4,453,0,from scratch,1.49,0.001,8,20,3.4783,18.7,358.4,8.4,366.8
+decoder_only,500,0.69,1.65,1.38,19.15,2.71,0.28,0.02,1.0,1.405,1.2,494,0,from scratch,1.36,0.0003,8,40,5.2971,42.6,574.8,0.7,575.5
+decoder_only_autoregressive,500,5.47,7.02,4.17,56.88,24.66,12.72,6.54,0.296,0.451,25.2,374,0,from scratch,1.36,0.001,8,20,3.576,16.2,439.5,47.8,487.4

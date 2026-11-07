@@ -194,3 +194,619 @@ LoRA fine-tuned models:
                                           model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
 deepseek-ai/deepseek-coder-1.3b-instruct +LoRA         0.0003           8       1         21.3                100.0           13.5              10.0
 === END LoRA deepseek-ai/deepseek-coder-1.3b-instruct (exit 0) ===
+=== START LoRA bigcode/starcoder2-3b ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[bigcode/starcoder2-3b +LoRA] tuning on cuda: grid {'learning_rate': [0.0001, 0.0003], 'batch_size': [8, 16], 'epochs': [1, 2, 3]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/483 [00:00<?, ?it/s]Loading weights:   0%|          | 1/483 [00:16<2:10:10, 16.20s/it]Loading weights:  14%|█▍        | 69/483 [00:17<01:13,  5.63it/s] Loading weights:  16%|█▌        | 77/483 [00:18<01:11,  5.67it/s]Loading weights:  18%|█▊        | 85/483 [00:20<01:11,  5.54it/s]Loading weights:  18%|█▊        | 88/483 [00:20<01:11,  5.53it/s]Loading weights:  21%|██        | 101/483 [00:22<01:02,  6.09it/s]Loading weights:  21%|██▏       | 103/483 [00:22<01:02,  6.09it/s]Loading weights:  24%|██▍       | 117/483 [00:24<00:57,  6.32it/s]Loading weights:  25%|██▍       | 119/483 [00:25<01:00,  6.02it/s]Loading weights:  28%|██▊       | 133/483 [00:27<00:56,  6.16it/s]Loading weights:  31%|███       | 149/483 [00:30<00:55,  6.02it/s]Loading weights:  31%|███▏      | 151/483 [00:30<00:55,  5.95it/s]Loading weights:  34%|███▍      | 165/483 [00:33<00:55,  5.68it/s]Loading weights:  35%|███▍      | 167/483 [00:33<00:57,  5.54it/s]Loading weights:  37%|███▋      | 181/483 [00:36<00:53,  5.60it/s]Loading weights:  38%|███▊      | 183/483 [00:36<00:50,  5.89it/s]Loading weights:  41%|████      | 197/483 [00:39<00:54,  5.27it/s]Loading weights:  41%|████      | 199/483 [00:39<00:51,  5.52it/s]Loading weights:  44%|████▍     | 213/483 [00:41<00:48,  5.59it/s]Loading weights:  45%|████▍     | 215/483 [00:42<00:46,  5.78it/s]Loading weights:  47%|████▋     | 229/483 [00:44<00:46,  5.43it/s]Loading weights:  48%|████▊     | 231/483 [00:45<00:44,  5.64it/s]Loading weights:  51%|█████     | 245/483 [00:47<00:40,  5.90it/s]Loading weights:  54%|█████▍    | 261/483 [00:48<00:31,  7.10it/s]Loading weights:  57%|█████▋    | 277/483 [00:50<00:24,  8.56it/s]Loading weights:  61%|██████    | 293/483 [00:52<00:21,  8.72it/s]Loading weights:  64%|██████▍   | 309/483 [00:53<00:18,  9.64it/s]Loading weights:  67%|██████▋   | 325/483 [00:55<00:16,  9.50it/s]Loading weights:  71%|███████   | 341/483 [00:56<00:13, 10.18it/s]Loading weights:  74%|███████▍  | 357/483 [00:58<00:12,  9.93it/s]Loading weights:  77%|███████▋  | 373/483 [00:59<00:10, 10.45it/s]Loading weights:  81%|████████  | 389/483 [01:01<00:09, 10.11it/s]Loading weights:  84%|████████▍ | 405/483 [01:02<00:07, 10.55it/s]Loading weights:  87%|████████▋ | 421/483 [01:04<00:06, 10.18it/s]Loading weights:  90%|█████████ | 437/483 [01:05<00:04, 10.58it/s]Loading weights:  94%|█████████▍| 453/483 [01:07<00:02, 10.24it/s]Loading weights:  97%|█████████▋| 469/483 [01:08<00:01, 11.44it/s]Loading weights: 100%|██████████| 483/483 [01:08<00:00,  7.08it/s]
+
+  [starcoder2-3b] run 1/4: lr 0.0001, batch 8, up to 3 epochs
+trainable params: 23,838,720 || all params: 3,054,210,048 || trainable%: 0.7805
+    epoch 1 step 1/48  loss 2.199  (5s)
+    epoch 1 step 11/48  loss 2.053  (44s)
+    epoch 1 step 21/48  loss 1.753  (92s)
+    epoch 1 step 31/48  loss 1.498  (138s)
+    epoch 1 step 41/48  loss 1.346  (182s)
+  epoch 1/3  train 1.261  val 0.444  (228s)
+    epoch 2 step 1/48  loss 0.738  (4s)
+    epoch 2 step 11/48  loss 0.640  (51s)
+    epoch 2 step 21/48  loss 0.632  (98s)
+    epoch 2 step 31/48  loss 0.632  (141s)
+    epoch 2 step 41/48  loss 0.648  (185s)
+  epoch 2/3  train 0.642  val 0.423  (233s)
+    epoch 3 step 1/48  loss 0.691  (5s)
+    epoch 3 step 11/48  loss 0.528  (47s)
+    epoch 3 step 21/48  loss 0.527  (90s)
+    epoch 3 step 31/48  loss 0.532  (134s)
+    epoch 3 step 41/48  loss 0.542  (175s)
+  epoch 3/3  train 0.538  val 0.429  (227s)
+
+  [starcoder2-3b] run 2/4: lr 0.0001, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 2.453  (10s)
+    epoch 1 step 11/24  loss 2.004  (98s)
+    epoch 1 step 21/24  loss 1.586  (189s)
+  epoch 1/3  train 1.507  val 0.464  (231s)
+    epoch 2 step 1/24  loss 0.935  (8s)
+    epoch 2 step 11/24  loss 0.759  (102s)
+    epoch 2 step 21/24  loss 0.765  (191s)
+  epoch 2/3  train 0.757  val 0.433  (233s)
+    epoch 3 step 1/24  loss 0.607  (9s)
+    epoch 3 step 11/24  loss 0.601  (94s)
+    epoch 3 step 21/24  loss 0.610  (181s)
+  epoch 3/3  train 0.604  val 0.432  (226s)
+
+  [starcoder2-3b] run 3/4: lr 0.0003, batch 8, up to 3 epochs
+    epoch 1 step 1/48  loss 2.199  (6s)
+    epoch 1 step 11/48  loss 1.760  (48s)
+    epoch 1 step 21/48  loss 1.363  (95s)
+    epoch 1 step 31/48  loss 1.176  (141s)
+    epoch 1 step 41/48  loss 1.072  (186s)
+  epoch 1/3  train 1.010  val 0.441  (232s)
+    epoch 2 step 1/48  loss 0.610  (4s)
+    epoch 2 step 11/48  loss 0.547  (52s)
+    epoch 2 step 21/48  loss 0.534  (99s)
+    epoch 2 step 31/48  loss 0.544  (142s)
+    epoch 2 step 41/48  loss 0.564  (186s)
+  epoch 2/3  train 0.560  val 0.439  (233s)
+    epoch 3 step 1/48  loss 0.576  (5s)
+    epoch 3 step 11/48  loss 0.418  (47s)
+    epoch 3 step 21/48  loss 0.423  (90s)
+    epoch 3 step 31/48  loss 0.435  (134s)
+    epoch 3 step 41/48  loss 0.445  (175s)
+  epoch 3/3  train 0.443  val 0.469  (226s)
+
+  [starcoder2-3b] run 4/4: lr 0.0003, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 2.453  (10s)
+    epoch 1 step 11/24  loss 1.558  (98s)
+    epoch 1 step 21/24  loss 1.216  (189s)
+  epoch 1/3  train 1.156  val 0.439  (231s)
+    epoch 2 step 1/24  loss 0.670  (8s)
+    epoch 2 step 11/24  loss 0.592  (102s)
+    epoch 2 step 21/24  loss 0.613  (191s)
+  epoch 2/3  train 0.608  val 0.423  (232s)
+    epoch 3 step 1/24  loss 0.490  (9s)
+    epoch 3 step 11/24  loss 0.474  (94s)
+    epoch 3 step 21/24  loss 0.496  (180s)
+  epoch 3/3  train 0.493  val 0.453  (226s)
+
+  [starcoder2-3b] selected lr 0.0001, batch 8, epochs 2 (val loss 0.423)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer GPT2Tokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  8/500 generated (3s)
+  16/500 generated (21s)
+  24/500 generated (24s)
+  32/500 generated (27s)
+  40/500 generated (46s)
+  48/500 generated (49s)
+  56/500 generated (67s)
+  64/500 generated (71s)
+  72/500 generated (74s)
+  80/500 generated (92s)
+  88/500 generated (96s)
+  96/500 generated (100s)
+  104/500 generated (104s)
+  112/500 generated (108s)
+  120/500 generated (113s)
+  128/500 generated (116s)
+  136/500 generated (122s)
+  144/500 generated (131s)
+  152/500 generated (149s)
+  160/500 generated (155s)
+  168/500 generated (160s)
+  176/500 generated (165s)
+  184/500 generated (184s)
+  192/500 generated (187s)
+  200/500 generated (195s)
+  208/500 generated (198s)
+  216/500 generated (202s)
+  224/500 generated (206s)
+  232/500 generated (215s)
+  240/500 generated (219s)
+  248/500 generated (225s)
+  256/500 generated (232s)
+  264/500 generated (250s)
+  272/500 generated (254s)
+  280/500 generated (262s)
+  288/500 generated (268s)
+  296/500 generated (274s)
+  304/500 generated (280s)
+  312/500 generated (284s)
+  320/500 generated (291s)
+  328/500 generated (300s)
+  336/500 generated (304s)
+  344/500 generated (315s)
+  352/500 generated (323s)
+  360/500 generated (330s)
+  368/500 generated (335s)
+  376/500 generated (343s)
+  384/500 generated (348s)
+  392/500 generated (354s)
+  400/500 generated (358s)
+  408/500 generated (366s)
+  416/500 generated (372s)
+  424/500 generated (376s)
+  432/500 generated (380s)
+  440/500 generated (390s)
+  448/500 generated (399s)
+  456/500 generated (408s)
+  464/500 generated (414s)
+  472/500 generated (418s)
+  480/500 generated (423s)
+  488/500 generated (428s)
+  496/500 generated (432s)
+  500/500 generated (483s)
+<generated>:3: SyntaxWarning: invalid escape sequence '\-'
+<generated>:3: SyntaxWarning: invalid escape sequence '\d'
+<generated>:3: SyntaxWarning: invalid escape sequence '\s'
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+<generated>:3: SyntaxWarning: invalid escape sequence '\/'
+<generated>:3: SyntaxWarning: invalid escape sequence '\d'
+[bigcode/starcoder2-3b +LoRA] saved 500 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_starcoder2-3b-LoRA_test500.jsonl
+
+LoRA fine-tuned models:
+                       model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+bigcode/starcoder2-3b +LoRA         0.0001           8       2        33.01                 99.0         2761.8             483.4
+=== END LoRA bigcode/starcoder2-3b (exit 0) ===
+=== START LoRA Qwen/Qwen2.5-Coder-3B-Instruct ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[Qwen/Qwen2.5-Coder-3B-Instruct +LoRA] tuning on cuda: grid {'learning_rate': [0.0001, 0.0003], 'batch_size': [8, 16], 'epochs': [1, 2, 3]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:01<08:01,  1.11s/it]Loading weights:  28%|██▊       | 123/434 [00:01<00:02, 127.10it/s]Loading weights:  37%|███▋      | 162/434 [00:01<00:02, 129.22it/s]Loading weights:  44%|████▍     | 190/434 [00:01<00:01, 136.96it/s]Loading weights:  49%|████▉     | 213/434 [00:01<00:01, 125.05it/s]Loading weights:  53%|█████▎    | 232/434 [00:02<00:01, 123.69it/s]Loading weights:  59%|█████▉    | 255/434 [00:02<00:01, 132.37it/s]Loading weights:  63%|██████▎   | 272/434 [00:02<00:01, 134.66it/s]Loading weights:  66%|██████▋   | 288/434 [00:02<00:01, 132.26it/s]Loading weights:  70%|██████▉   | 303/434 [00:02<00:00, 131.89it/s]Loading weights:  73%|███████▎  | 318/434 [00:02<00:00, 126.88it/s]Loading weights:  76%|███████▋  | 332/434 [00:02<00:00, 123.63it/s]Loading weights:  79%|███████▉  | 345/434 [00:03<00:00, 116.17it/s]Loading weights:  84%|████████▎ | 363/434 [00:03<00:00, 127.55it/s]Loading weights:  87%|████████▋ | 377/434 [00:03<00:00, 120.20it/s]Loading weights:  90%|████████▉ | 390/434 [00:03<00:00, 118.60it/s]Loading weights:  93%|█████████▎| 403/434 [00:03<00:00, 113.10it/s]Loading weights:  97%|█████████▋| 423/434 [00:03<00:00, 127.39it/s]Loading weights: 100%|██████████| 434/434 [00:03<00:00, 117.98it/s]
+
+  [Qwen2.5-Coder-3B-Instruct] run 1/4: lr 0.0001, batch 8, up to 3 epochs
+trainable params: 29,933,568 || all params: 3,115,872,256 || trainable%: 0.9607
+    epoch 1 step 1/48  loss 0.797  (6s)
+    epoch 1 step 11/48  loss 0.584  (47s)
+    epoch 1 step 21/48  loss 0.485  (92s)
+    epoch 1 step 31/48  loss 0.449  (139s)
+    epoch 1 step 41/48  loss 0.426  (184s)
+  epoch 1/3  train 0.418  val 0.391  (234s)
+    epoch 2 step 1/48  loss 0.339  (4s)
+    epoch 2 step 11/48  loss 0.259  (55s)
+    epoch 2 step 21/48  loss 0.253  (104s)
+    epoch 2 step 31/48  loss 0.253  (147s)
+    epoch 2 step 41/48  loss 0.262  (193s)
+  epoch 2/3  train 0.261  val 0.405  (241s)
+    epoch 3 step 1/48  loss 0.303  (5s)
+    epoch 3 step 11/48  loss 0.151  (48s)
+    epoch 3 step 21/48  loss 0.156  (92s)
+    epoch 3 step 31/48  loss 0.142  (136s)
+    epoch 3 step 41/48  loss 0.143  (178s)
+  epoch 3/3  train 0.144  val 0.457  (230s)
+
+  [Qwen2.5-Coder-3B-Instruct] run 2/4: lr 0.0001, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 0.886  (10s)
+    epoch 1 step 11/24  loss 0.536  (99s)
+    epoch 1 step 21/24  loss 0.459  (191s)
+  epoch 1/3  train 0.452  val 0.404  (234s)
+    epoch 2 step 1/24  loss 0.299  (8s)
+    epoch 2 step 11/24  loss 0.284  (104s)
+    epoch 2 step 21/24  loss 0.298  (193s)
+  epoch 2/3  train 0.299  val 0.397  (235s)
+    epoch 3 step 1/24  loss 0.294  (9s)
+    epoch 3 step 11/24  loss 0.218  (96s)
+    epoch 3 step 21/24  loss 0.203  (183s)
+  epoch 3/3  train 0.205  val 0.430  (229s)
+
+  [Qwen2.5-Coder-3B-Instruct] run 3/4: lr 0.0003, batch 8, up to 3 epochs
+    epoch 1 step 1/48  loss 0.797  (6s)
+    epoch 1 step 11/48  loss 0.505  (49s)
+    epoch 1 step 21/48  loss 0.433  (96s)
+    epoch 1 step 31/48  loss 0.411  (144s)
+    epoch 1 step 41/48  loss 0.395  (188s)
+  epoch 1/3  train 0.389  val 0.383  (235s)
+    epoch 2 step 1/48  loss 0.283  (4s)
+    epoch 2 step 11/48  loss 0.199  (53s)
+    epoch 2 step 21/48  loss 0.186  (101s)
+    epoch 2 step 31/48  loss 0.184  (143s)
+    epoch 2 step 41/48  loss 0.194  (188s)
+  epoch 2/3  train 0.194  val 0.438  (236s)
+    epoch 3 step 1/48  loss 0.193  (5s)
+    epoch 3 step 11/48  loss 0.084  (48s)
+    epoch 3 step 21/48  loss 0.088  (92s)
+    epoch 3 step 31/48  loss 0.084  (136s)
+    epoch 3 step 41/48  loss 0.089  (179s)
+  epoch 3/3  train 0.091  val 0.522  (231s)
+
+  [Qwen2.5-Coder-3B-Instruct] run 4/4: lr 0.0003, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 0.886  (10s)
+    epoch 1 step 11/24  loss 0.476  (100s)
+    epoch 1 step 21/24  loss 0.422  (196s)
+  epoch 1/3  train 0.416  val 0.394  (241s)
+    epoch 2 step 1/24  loss 0.243  (8s)
+    epoch 2 step 11/24  loss 0.219  (108s)
+    epoch 2 step 21/24  loss 0.225  (197s)
+  epoch 2/3  train 0.225  val 0.421  (239s)
+    epoch 3 step 1/24  loss 0.166  (9s)
+    epoch 3 step 11/24  loss 0.116  (96s)
+    epoch 3 step 21/24  loss 0.110  (183s)
+  epoch 3/3  train 0.111  val 0.499  (229s)
+
+  [Qwen2.5-Coder-3B-Instruct] selected lr 0.0003, batch 8, epochs 1 (val loss 0.383)
+  8/500 generated (6s)
+  16/500 generated (15s)
+  24/500 generated (19s)
+  32/500 generated (26s)
+  40/500 generated (32s)
+  48/500 generated (40s)
+  56/500 generated (46s)
+  64/500 generated (51s)
+  72/500 generated (59s)
+  80/500 generated (66s)
+  88/500 generated (74s)
+  96/500 generated (82s)
+  104/500 generated (88s)
+  112/500 generated (92s)
+  120/500 generated (114s)
+  128/500 generated (119s)
+  136/500 generated (126s)
+  144/500 generated (134s)
+  152/500 generated (146s)
+  160/500 generated (152s)
+  168/500 generated (160s)
+  176/500 generated (167s)
+  184/500 generated (178s)
+  192/500 generated (185s)
+  200/500 generated (192s)
+  208/500 generated (200s)
+  216/500 generated (208s)
+  224/500 generated (214s)
+  232/500 generated (226s)
+  240/500 generated (239s)
+  248/500 generated (246s)
+  256/500 generated (252s)
+  264/500 generated (261s)
+  272/500 generated (266s)
+  280/500 generated (278s)
+  288/500 generated (287s)
+  296/500 generated (296s)
+  304/500 generated (303s)
+  312/500 generated (309s)
+  320/500 generated (325s)
+  328/500 generated (340s)
+  336/500 generated (344s)
+  344/500 generated (356s)
+  352/500 generated (365s)
+  360/500 generated (374s)
+  368/500 generated (383s)
+  376/500 generated (392s)
+  384/500 generated (398s)
+  392/500 generated (403s)
+  400/500 generated (407s)
+  408/500 generated (415s)
+  416/500 generated (438s)
+  424/500 generated (449s)
+  432/500 generated (454s)
+  440/500 generated (468s)
+  448/500 generated (476s)
+  456/500 generated (486s)
+  464/500 generated (492s)
+  472/500 generated (501s)
+  480/500 generated (512s)
+  488/500 generated (517s)
+  496/500 generated (522s)
+  500/500 generated (541s)
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+<generated>:3: SyntaxWarning: invalid escape sequence '\W'
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+[Qwen/Qwen2.5-Coder-3B-Instruct +LoRA] saved 500 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B-Instruct-LoRA_test500.jsonl
+
+LoRA fine-tuned models:
+                                model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+Qwen/Qwen2.5-Coder-3B-Instruct +LoRA         0.0003           8       1        41.25                 99.6         2823.7             541.2
+=== END LoRA Qwen/Qwen2.5-Coder-3B-Instruct (exit 0) ===
+=== START LoRA deepseek-ai/deepseek-coder-1.3b-base ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[deepseek-ai/deepseek-coder-1.3b-base +LoRA] tuning on cuda: grid {'learning_rate': [0.0001, 0.0003], 'batch_size': [8, 16], 'epochs': [1, 2, 3]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s]Loading weights:   0%|          | 1/219 [00:02<07:58,  2.19s/it]Loading weights:  11%|█         | 24/219 [00:02<00:15, 12.98it/s]Loading weights:  14%|█▍        | 31/219 [00:02<00:11, 16.01it/s]Loading weights:  17%|█▋        | 38/219 [00:02<00:09, 20.01it/s]Loading weights:  20%|█▉        | 43/219 [00:03<00:09, 18.73it/s]Loading weights:  22%|██▏       | 49/219 [00:03<00:09, 18.58it/s]Loading weights:  25%|██▌       | 55/219 [00:03<00:07, 22.70it/s]Loading weights:  27%|██▋       | 59/219 [00:03<00:08, 19.40it/s]Loading weights:  31%|███       | 67/219 [00:04<00:07, 20.27it/s]Loading weights:  33%|███▎      | 73/219 [00:04<00:05, 24.38it/s]Loading weights:  35%|███▌      | 77/219 [00:04<00:07, 20.00it/s]Loading weights:  39%|███▉      | 85/219 [00:05<00:06, 20.41it/s]Loading weights:  42%|████▏     | 91/219 [00:05<00:05, 24.50it/s]Loading weights:  43%|████▎     | 95/219 [00:05<00:05, 20.78it/s]Loading weights:  46%|████▌     | 100/219 [00:05<00:04, 24.50it/s]Loading weights:  47%|████▋     | 104/219 [00:05<00:05, 19.51it/s]Loading weights:  50%|█████     | 110/219 [00:06<00:04, 23.70it/s]Loading weights:  52%|█████▏    | 114/219 [00:06<00:05, 20.25it/s]Loading weights:  55%|█████▌    | 121/219 [00:06<00:04, 19.65it/s]Loading weights:  58%|█████▊    | 127/219 [00:06<00:04, 22.62it/s]Loading weights:  59%|█████▉    | 130/219 [00:07<00:04, 18.63it/s]Loading weights:  62%|██████▏   | 136/219 [00:07<00:03, 23.11it/s]Loading weights:  63%|██████▎   | 139/219 [00:07<00:04, 18.65it/s]Loading weights:  66%|██████▌   | 145/219 [00:07<00:03, 23.66it/s]Loading weights:  68%|██████▊   | 148/219 [00:08<00:03, 18.23it/s]Loading weights:  70%|███████   | 154/219 [00:08<00:02, 24.20it/s]Loading weights:  72%|███████▏  | 158/219 [00:08<00:03, 19.49it/s]Loading weights:  74%|███████▍  | 163/219 [00:08<00:02, 22.62it/s]Loading weights:  76%|███████▌  | 166/219 [00:08<00:02, 20.31it/s]Loading weights:  77%|███████▋  | 169/219 [00:09<00:02, 20.60it/s]Loading weights:  79%|███████▉  | 173/219 [00:09<00:01, 23.33it/s]Loading weights:  80%|████████  | 176/219 [00:09<00:02, 18.44it/s]Loading weights:  83%|████████▎ | 181/219 [00:09<00:01, 22.63it/s]Loading weights:  84%|████████▍ | 184/219 [00:09<00:01, 18.21it/s]Loading weights:  85%|████████▌ | 187/219 [00:09<00:01, 19.53it/s]Loading weights:  88%|████████▊ | 193/219 [00:10<00:01, 21.30it/s]Loading weights:  89%|████████▉ | 196/219 [00:10<00:01, 22.23it/s]Loading weights:  92%|█████████▏| 202/219 [00:10<00:00, 20.24it/s]Loading weights:  95%|█████████▍| 208/219 [00:10<00:00, 26.33it/s]Loading weights:  97%|█████████▋| 212/219 [00:11<00:00, 21.24it/s]Loading weights: 100%|██████████| 219/219 [00:11<00:00, 19.68it/s]
+
+  [deepseek-coder-1.3b-base] run 1/4: lr 0.0001, batch 8, up to 3 epochs
+trainable params: 14,991,360 || all params: 1,361,463,296 || trainable%: 1.1011
+    epoch 1 step 1/48  loss 0.581  (3s)
+    epoch 1 step 11/48  loss 0.529  (25s)
+    epoch 1 step 21/48  loss 0.468  (49s)
+    epoch 1 step 31/48  loss 0.450  (73s)
+    epoch 1 step 41/48  loss 0.433  (96s)
+  epoch 1/3  train 0.424  val 0.393  (120s)
+    epoch 2 step 1/48  loss 0.342  (2s)
+    epoch 2 step 11/48  loss 0.298  (27s)
+    epoch 2 step 21/48  loss 0.288  (53s)
+    epoch 2 step 31/48  loss 0.293  (76s)
+    epoch 2 step 41/48  loss 0.305  (100s)
+  epoch 2/3  train 0.304  val 0.384  (125s)
+    epoch 3 step 1/48  loss 0.360  (3s)
+    epoch 3 step 11/48  loss 0.214  (26s)
+    epoch 3 step 21/48  loss 0.219  (49s)
+    epoch 3 step 31/48  loss 0.208  (72s)
+    epoch 3 step 41/48  loss 0.214  (95s)
+  epoch 3/3  train 0.213  val 0.418  (122s)
+
+  [deepseek-coder-1.3b-base] run 2/4: lr 0.0001, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 0.617  (5s)
+    epoch 1 step 11/24  loss 0.497  (54s)
+    epoch 1 step 21/24  loss 0.460  (102s)
+  epoch 1/3  train 0.452  val 0.409  (125s)
+    epoch 2 step 1/24  loss 0.350  (4s)
+    epoch 2 step 11/24  loss 0.327  (56s)
+    epoch 2 step 21/24  loss 0.343  (105s)
+  epoch 2/3  train 0.343  val 0.386  (127s)
+    epoch 3 step 1/24  loss 0.334  (5s)
+    epoch 3 step 11/24  loss 0.285  (52s)
+    epoch 3 step 21/24  loss 0.279  (99s)
+  epoch 3/3  train 0.277  val 0.390  (124s)
+
+  [deepseek-coder-1.3b-base] run 3/4: lr 0.0003, batch 8, up to 3 epochs
+    epoch 1 step 1/48  loss 0.581  (3s)
+    epoch 1 step 11/48  loss 0.485  (27s)
+    epoch 1 step 21/48  loss 0.427  (53s)
+    epoch 1 step 31/48  loss 0.416  (78s)
+    epoch 1 step 41/48  loss 0.402  (103s)
+  epoch 1/3  train 0.394  val 0.376  (129s)
+    epoch 2 step 1/48  loss 0.271  (2s)
+    epoch 2 step 11/48  loss 0.234  (29s)
+    epoch 2 step 21/48  loss 0.219  (56s)
+    epoch 2 step 31/48  loss 0.223  (81s)
+    epoch 2 step 41/48  loss 0.235  (106s)
+  epoch 2/3  train 0.233  val 0.400  (132s)
+    epoch 3 step 1/48  loss 0.237  (3s)
+    epoch 3 step 11/48  loss 0.120  (27s)
+    epoch 3 step 21/48  loss 0.127  (50s)
+    epoch 3 step 31/48  loss 0.122  (74s)
+    epoch 3 step 41/48  loss 0.126  (97s)
+  epoch 3/3  train 0.125  val 0.467  (125s)
+
+  [deepseek-coder-1.3b-base] run 4/4: lr 0.0003, batch 16, up to 3 epochs
+    epoch 1 step 1/24  loss 0.617  (5s)
+    epoch 1 step 11/24  loss 0.451  (54s)
+    epoch 1 step 21/24  loss 0.423  (103s)
+  epoch 1/3  train 0.415  val 0.387  (126s)
+    epoch 2 step 1/24  loss 0.285  (4s)
+    epoch 2 step 11/24  loss 0.257  (56s)
+    epoch 2 step 21/24  loss 0.268  (104s)
+  epoch 2/3  train 0.268  val 0.393  (127s)
+    epoch 3 step 1/24  loss 0.221  (5s)
+    epoch 3 step 11/24  loss 0.163  (51s)
+    epoch 3 step 21/24  loss 0.157  (98s)
+  epoch 3/3  train 0.157  val 0.436  (123s)
+
+  [deepseek-coder-1.3b-base] selected lr 0.0003, batch 8, epochs 1 (val loss 0.376)
+  8/500 generated (5s)
+  16/500 generated (9s)
+  24/500 generated (11s)
+  32/500 generated (14s)
+  40/500 generated (18s)
+  48/500 generated (24s)
+  56/500 generated (34s)
+  64/500 generated (36s)
+  72/500 generated (40s)
+  80/500 generated (53s)
+  88/500 generated (57s)
+  96/500 generated (61s)
+  104/500 generated (64s)
+  112/500 generated (67s)
+  120/500 generated (72s)
+  128/500 generated (74s)
+  136/500 generated (79s)
+  144/500 generated (83s)
+  152/500 generated (90s)
+  160/500 generated (93s)
+  168/500 generated (100s)
+  176/500 generated (107s)
+  184/500 generated (120s)
+  192/500 generated (122s)
+  200/500 generated (129s)
+  208/500 generated (133s)
+  216/500 generated (137s)
+  224/500 generated (150s)
+  232/500 generated (163s)
+  240/500 generated (167s)
+  248/500 generated (172s)
+  256/500 generated (177s)
+  264/500 generated (190s)
+  272/500 generated (193s)
+  280/500 generated (200s)
+  288/500 generated (213s)
+  296/500 generated (227s)
+  304/500 generated (232s)
+  312/500 generated (237s)
+  320/500 generated (241s)
+  328/500 generated (248s)
+  336/500 generated (251s)
+  344/500 generated (258s)
+  352/500 generated (262s)
+  360/500 generated (267s)
+  368/500 generated (270s)
+  376/500 generated (277s)
+  384/500 generated (281s)
+  392/500 generated (284s)
+  400/500 generated (288s)
+  408/500 generated (293s)
+  416/500 generated (298s)
+  424/500 generated (301s)
+  432/500 generated (304s)
+  440/500 generated (311s)
+  448/500 generated (317s)
+  456/500 generated (321s)
+  464/500 generated (326s)
+  472/500 generated (339s)
+  480/500 generated (343s)
+  488/500 generated (346s)
+  496/500 generated (349s)
+  500/500 generated (375s)
+<generated>:3: SyntaxWarning: invalid escape sequence '\s'
+<generated>:3: SyntaxWarning: invalid escape sequence '\d'
+<generated>:3: SyntaxWarning: invalid escape sequence '\.'
+<generated>:3: SyntaxWarning: invalid escape sequence '\.'
+<generated>:3: SyntaxWarning: invalid escape sequence '\/'
+[deepseek-ai/deepseek-coder-1.3b-base +LoRA] saved 500 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-base-LoRA_test500.jsonl
+
+LoRA fine-tuned models:
+                                      model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+deepseek-ai/deepseek-coder-1.3b-base +LoRA         0.0003           8       1        35.47                 98.6         1507.9             374.9
+=== END LoRA deepseek-ai/deepseek-coder-1.3b-base (exit 0) ===
+=== START few-shot (1 to generate) ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+Evaluating on 500 problems from 'test'. Example prompt:
+
+You are an expert Python programmer, and here is your task: Write a function to find the minimum cost path to reach (m, n) from (0, 0) for the given cost matrix cost[][] and a position (m, n) in cost[][]. Your code should pass these tests:
+
+assert min_cost([[1, 2, 3], [4, 8, 2], [1, 5, 3]], 2, 2) == 8
+assert min_cost([[2, 3, 4], [5, 9, 3], [2, 6, 4]], 2, 2) == 12
+assert min_cost([[3, 4, 5], [6, 10, 4], [3, 7, 5]], 2, 2) == 16
+[BEGIN]
+R = 3
+C = 3
+def min_cost(cost, m, n):
+    tc = [[0 for x in range(C)] for x in range(R)]
+    tc[0][0] = cost[0][0]
+    for i in range(1, m+1):
+        tc[i][0] = tc[i-1][0] + cost[i][0]
+    for j in range(1, n+1):
+        tc[0][j] = tc[0][j-1] + cost[0][j]
+    for i in range(1, m+1):
+        for j in range(1, n+1):
+            tc[i][j] = min(tc[i-1][j-1], tc[i-1][j], tc[i][j-1]) + cost[i][j]
+    return tc[m][n]
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:
+
+assert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)
+assert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)
+assert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)
+[BEGIN]
+def similar_elements(test_tup1, test_tup2):
+  res = tuple(set(test_tup1) & set(test_tup2))
+  return (res)
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:
+
+assert is_not_prime(2) == False
+assert is_not_prime(10) == True
+assert is_not_prime(35) == True
+[BEGIN]
+import math
+def is_not_prime(n):
+    result = False
+    for i in range(2,int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            result = True
+    return result
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a python function to remove first and last occurrence of a given character from the string. Your code should pass these tests:
+
+assert remove_Occ("hello","l") == "heo"
+assert remove_Occ("abcda","a") == "bcd"
+assert remove_Occ("PHP","P") == "H"
+[BEGIN]
+
+[bigcode/starcoder2-3b] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_starcoder2-3b_test500.jsonl
+[deepseek-ai/deepseek-coder-1.3b-base] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-base_test500.jsonl
+<generated>:3: SyntaxWarning: invalid escape sequence '\*'
+<generated>:3: SyntaxWarning: invalid escape sequence '\/'
+[Qwen/Qwen2.5-Coder-1.5B] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B_test500.jsonl
+[Qwen/Qwen2.5-Coder-3B] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~5.7 GiB
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:08<1:00:08,  8.33s/it]Loading weights:  30%|██▉       | 129/434 [00:08<00:14, 21.58it/s]Loading weights:  43%|████▎     | 188/434 [00:11<00:11, 21.32it/s]Loading weights:  51%|█████     | 221/434 [00:12<00:10, 20.93it/s]Loading weights:  56%|█████▌    | 242/434 [00:13<00:08, 22.27it/s]Loading weights:  59%|█████▉    | 257/434 [00:14<00:09, 19.62it/s]Loading weights:  62%|██████▏   | 267/434 [00:15<00:08, 20.13it/s]Loading weights:  63%|██████▎   | 275/434 [00:15<00:07, 21.76it/s]Loading weights:  65%|██████▍   | 282/434 [00:16<00:07, 19.76it/s]Loading weights:  67%|██████▋   | 291/434 [00:16<00:07, 19.41it/s]Loading weights:  68%|██████▊   | 295/434 [00:16<00:07, 19.29it/s]Loading weights:  70%|██████▉   | 303/434 [00:17<00:06, 20.44it/s]Loading weights:  71%|███████   | 307/434 [00:17<00:06, 18.46it/s]Loading weights:  73%|███████▎  | 315/434 [00:17<00:06, 19.83it/s]Loading weights:  73%|███████▎  | 318/434 [00:17<00:06, 18.76it/s]Loading weights:  75%|███████▌  | 327/434 [00:18<00:05, 18.64it/s]Loading weights:  78%|███████▊  | 339/434 [00:19<00:04, 19.13it/s]Loading weights:  79%|███████▉  | 342/434 [00:19<00:04, 19.08it/s]Loading weights:  81%|████████  | 351/434 [00:19<00:03, 22.64it/s]Loading weights:  82%|████████▏ | 354/434 [00:19<00:04, 16.87it/s]Loading weights:  84%|████████▎ | 363/434 [00:20<00:03, 20.14it/s]Loading weights:  84%|████████▍ | 366/434 [00:20<00:03, 19.30it/s]Loading weights:  86%|████████▋ | 375/434 [00:20<00:03, 17.56it/s]Loading weights:  89%|████████▉ | 387/434 [00:21<00:02, 20.49it/s]Loading weights:  90%|████████▉ | 390/434 [00:21<00:02, 19.66it/s]Loading weights:  92%|█████████▏| 399/434 [00:21<00:01, 22.11it/s]Loading weights:  93%|█████████▎| 402/434 [00:22<00:01, 18.13it/s]Loading weights:  95%|█████████▍| 411/434 [00:22<00:01, 19.95it/s]Loading weights:  95%|█████████▌| 413/434 [00:22<00:01, 19.69it/s]Loading weights:  97%|█████████▋| 423/434 [00:23<00:00, 20.58it/s]Loading weights: 100%|██████████| 434/434 [00:23<00:00, 18.63it/s]
+  8/500 generated (7s)
+  16/500 generated (16s)
+  24/500 generated (22s)
+  32/500 generated (50s)
+  40/500 generated (62s)
+  48/500 generated (69s)
+  56/500 generated (98s)
+  64/500 generated (103s)
+  72/500 generated (110s)
+  80/500 generated (118s)
+  88/500 generated (124s)
+  96/500 generated (134s)
+  104/500 generated (141s)
+  112/500 generated (148s)
+  120/500 generated (156s)
+  128/500 generated (162s)
+  136/500 generated (191s)
+  144/500 generated (201s)
+  152/500 generated (212s)
+  160/500 generated (220s)
+  168/500 generated (230s)
+  176/500 generated (244s)
+  184/500 generated (258s)
+  192/500 generated (264s)
+  200/500 generated (294s)
+  208/500 generated (300s)
+  216/500 generated (309s)
+  224/500 generated (317s)
+  232/500 generated (335s)
+  240/500 generated (346s)
+  248/500 generated (357s)
+  256/500 generated (372s)
+  264/500 generated (383s)
+  272/500 generated (390s)
+  280/500 generated (401s)
+  288/500 generated (412s)
+  296/500 generated (423s)
+  304/500 generated (435s)
+  312/500 generated (448s)
+  320/500 generated (461s)
+  328/500 generated (476s)
+  336/500 generated (484s)
+  344/500 generated (501s)
+  352/500 generated (511s)
+  360/500 generated (521s)
+  368/500 generated (530s)
+  376/500 generated (542s)
+  384/500 generated (551s)
+  392/500 generated (559s)
+  400/500 generated (566s)
+  408/500 generated (576s)
+  416/500 generated (587s)
+  424/500 generated (596s)
+  432/500 generated (606s)
+  440/500 generated (615s)
+  448/500 generated (627s)
+  456/500 generated (640s)
+  464/500 generated (651s)
+  472/500 generated (659s)
+  480/500 generated (669s)
+  488/500 generated (677s)
+  496/500 generated (690s)
+  500/500 generated (719s)
+[Qwen/Qwen2.5-Coder-3B] saved 500 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B_test500.jsonl
+[deepseek-ai/deepseek-coder-1.3b-instruct] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-instruct_test500.jsonl
+<generated>:3: SyntaxWarning: invalid escape sequence '\*'
+<generated>:3: SyntaxWarning: invalid escape sequence '\.'
+[Qwen/Qwen2.5-Coder-1.5B-Instruct] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B-Instruct_test500.jsonl
+<generated>:3: SyntaxWarning: invalid escape sequence '\d'
+[Qwen/Qwen2.5-Coder-3B-Instruct] using cached generations: /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B-Instruct_test500.jsonl
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+<generated>:3: SyntaxWarning: invalid escape sequence '\d'
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+<generated>:3: SyntaxWarning: invalid escape sequence '\.'
+<generated>:3: SyntaxWarning: invalid escape sequence '\w'
+(using saved fine-tuned results from /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/finetuned_metrics_summary.csv)
+(using saved from-scratch results from /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/scratch_metrics_summary.csv)
+
+Model comparison (times in seconds):
+                                      model                   family  parameters_m  learning_rate  batch_size  epochs  n_problems  corpus_bleu  mean_sentence_bleu  syntax_validity_pct  training_time_s  tuning_time_s  inference_time_s  total_time_s
+deepseek-ai/deepseek-coder-1.3b-base +LoRA pretrained + LoRA (base)       1346.50         0.0003         8.0     1.0         500        35.47               34.35                 98.6           1507.9         1507.9             374.9        1882.8
+                     Qwen/Qwen2.5-Coder-3B        pretrained (base)       3085.90            NaN         NaN     NaN         500        34.08               32.98                 99.2              0.0            NaN             719.4         745.8
+            Qwen/Qwen2.5-Coder-3B-Instruct    pretrained (instruct)       3085.90            NaN         NaN     NaN         500        32.85               32.44                100.0              0.0            NaN            1815.4        1855.5
+                   Qwen/Qwen2.5-Coder-1.5B        pretrained (base)       1543.70            NaN         NaN     NaN         500        30.96               29.95                 99.4              0.0            NaN             998.8        1000.9
+          Qwen/Qwen2.5-Coder-1.5B-Instruct    pretrained (instruct)       1543.70            NaN         NaN     NaN         500        28.47               28.54                 99.4              0.0            NaN             997.6        1001.0
+                     bigcode/starcoder2-3b        pretrained (base)       3030.40            NaN         NaN     NaN         500        28.11               27.46                 99.6              0.0            NaN            2383.4        2413.4
+      deepseek-ai/deepseek-coder-1.3b-base        pretrained (base)       1346.50            NaN         NaN     NaN         500        27.99               27.28                 99.0              0.0            NaN            1313.0        1315.1
+  deepseek-ai/deepseek-coder-1.3b-instruct    pretrained (instruct)       1346.50            NaN         NaN     NaN         500        27.10               26.37                100.0              0.0            NaN            1881.6        1884.3
+                           encoder_decoder             from scratch          1.49         0.0030        16.0     2.0          20         2.32                2.39                  0.0              1.3            3.3               0.9           4.3
+               decoder_only_autoregressive             from scratch          1.36         0.0030        16.0     2.0          20         2.00                2.20                  0.0              1.6            3.2              11.6          14.8
+                              decoder_only             from scratch          1.36         0.0010        16.0     2.0          20         0.05                0.26                  0.0              2.2            4.3               0.0           4.4
+
+Results written to /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results  (run took 753s)
+=== END few-shot (1 to generate) (exit 0) ===

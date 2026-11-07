@@ -1,8 +1,8 @@
 model,n_problems,corpus_bleu,mean_sentence_bleu,median_sentence_bleu,precision_1gram,precision_2gram,precision_3gram,precision_4gram,brevity_penalty,hyp_ref_length_ratio,syntax_validity_pct,syntax_errors,empty_predictions,family,parameters_m,training_time_s,load_time_s,inference_time_s,total_time_s
-Qwen/Qwen2.5-Coder-3B,20,25.62,27.15,26.92,66.86,41.58,30.56,23.95,0.678,0.72,100.0,0,0,pretrained (base),3085.9,0.0,19.5,24.2,43.7
-deepseek-ai/deepseek-coder-1.3b-instruct,20,23.64,22.71,25.04,54.93,35.55,25.48,18.54,0.763,0.787,100.0,0,0,pretrained (instruct),1346.5,0.0,25.4,19.4,44.8
-Qwen/Qwen2.5-Coder-3B-Instruct,20,23.6,26.05,21.31,66.09,41.4,30.07,23.49,0.633,0.686,100.0,0,0,pretrained (instruct),3085.9,0.0,52.6,21.9,74.5
-bigcode/starcoder2-3b,20,22.87,24.2,14.66,58.99,33.97,23.74,18.08,0.751,0.777,100.0,0,0,pretrained (base),3030.4,0.0,73.0,21.8,94.8
-Qwen/Qwen2.5-Coder-1.5B,20,21.97,24.67,22.6,62.7,35.17,23.18,16.27,0.728,0.759,100.0,0,0,pretrained (base),1543.7,0.0,31.1,33.3,64.4
-Qwen/Qwen2.5-Coder-1.5B-Instruct,20,20.63,25.86,21.3,68.58,43.26,30.06,22.62,0.547,0.624,100.0,0,0,pretrained (instruct),1543.7,0.0,27.9,16.0,43.9
-deepseek-ai/deepseek-coder-1.3b-base,20,17.83,17.97,17.57,61.27,35.11,23.22,16.15,0.595,0.658,100.0,0,0,pretrained (base),1346.5,0.0,26.3,18.0,44.3
+Qwen/Qwen2.5-Coder-3B,500,34.08,32.98,26.09,67.12,44.98,33.67,26.59,0.84,0.852,99.2,4,0,pretrained (base),3085.9,0.0,26.4,719.4,745.8
+Qwen/Qwen2.5-Coder-3B-Instruct,500,32.85,32.44,26.98,67.26,44.73,32.98,25.52,0.823,0.837,100.0,0,0,pretrained (instruct),3085.9,0.0,40.1,1815.4,1855.5
+Qwen/Qwen2.5-Coder-1.5B,500,30.96,29.95,25.43,63.39,40.33,28.69,21.59,0.873,0.88,99.4,3,0,pretrained (base),1543.7,0.0,2.1,998.8,1000.9
+Qwen/Qwen2.5-Coder-1.5B-Instruct,500,28.47,28.54,24.07,64.8,40.97,28.69,21.17,0.799,0.817,99.4,3,0,pretrained (instruct),1543.7,0.0,3.4,997.6,1001.0
+bigcode/starcoder2-3b,500,28.11,27.46,23.62,61.79,38.5,27.22,20.26,0.83,0.843,99.6,2,0,pretrained (base),3030.4,0.0,30.0,2383.4,2413.4
+deepseek-ai/deepseek-coder-1.3b-base,500,27.99,27.28,23.11,62.53,39.3,27.94,20.92,0.809,0.825,99.0,5,0,pretrained (base),1346.5,0.0,2.1,1313.0,1315.1
+deepseek-ai/deepseek-coder-1.3b-instruct,500,27.1,26.37,22.47,65.24,40.84,28.61,21.27,0.759,0.784,100.0,0,0,pretrained (instruct),1346.5,0.0,2.7,1881.6,1884.3
