@@ -16,6 +16,22 @@ What it does
        Each queue's output goes to logs/gpu<N>.log; progress is printed every few minutes.
     6. Rebuilds the combined summaries and the comparison plot from everything saved,
        and zips results/ to /kaggle/working/assignment3_results.zip.
+    7. Pushes results/ (and the run logs) to GitHub, on the branch kaggle-results, if a
+       Kaggle secret named GITHUB_TOKEN exists. Kaggle deletes /kaggle/working when an
+       interactive session ends, so this is the reliable way to keep the results.
+
+GitHub push setup (once)
+    1. github.com > Settings > Developer settings > Fine-grained tokens > Generate:
+       Repository access "Only select repositories" > MSDS458_KshaunishSoni,
+       Permissions > Contents "Read and write". Copy the token.
+    2. Kaggle notebook > Add-ons > Secrets > Add: label GITHUB_TOKEN, value the token,
+       and tick it for this notebook.
+    3. On your Mac, after a run:
+           git fetch origin kaggle-results
+           git checkout origin/kaggle-results -- Assignment3/results
+    The push goes to its own branch (not main) so it never conflicts with your local
+    work. LoRA adapters are left out by default (a 3B model's adapters can be over
+    GitHub's 100 MB file limit); --push-adapters includes those under the limit.
 
 Reruns are safe: tuned adapters and generations are cached in results/, so after a
 timeout, rerunning the notebook only does the unfinished work.
@@ -37,6 +53,10 @@ Options
     --skip finetune scratch fewshot   leave out job types
     --gpus N             use only the first N GPUs
     --dry-run            print the plan and commands without running anything
+    --push-only          skip all work; just push the current results/ to GitHub (use it
+                         from a still-open session whose results were not pushed)
+    --push-branch NAME   branch to push to (default kaggle-results)
+    --no-push            do not push to GitHub
 """
 
 import argparse
@@ -117,6 +137,99 @@ def hf_login():
         print("Using the HF_TOKEN Kaggle secret")
     except Exception:
         print("No HF_TOKEN secret (fine for the default models)")
+
+
+def kaggle_secret(name):
+    if os.environ.get(name):
+        return os.environ[name]
+    try:
+        from kaggle_secrets import UserSecretsClient
+        return UserSecretsClient().get_secret(name)
+    except Exception:
+        return None
+
+
+# ----------------------------------------------------------------------------
+# Push results to GitHub
+# ----------------------------------------------------------------------------
+GITHUB_FILE_LIMIT = 95 * 2**20      # GitHub rejects files over 100 MB
+
+
+def git(args, cwd, token, check=True):
+    """Run git without ever printing the token (it is in the remote URL)."""
+    out = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    text = (out.stdout + out.stderr).replace(token, "***")
+    if check and out.returncode != 0:
+        raise RuntimeError(f"git {args[0]} failed: {text.strip()}")
+    return out.returncode, text
+
+
+def push_results(code_dir, repo_url, branch, log_dir, include_adapters, quick):
+    """Copy results/ into a fresh clone of the repo, commit, push to `branch`."""
+    token = kaggle_secret("GITHUB_TOKEN")
+    if not token:
+        print("\nNot pushing to GitHub: no GITHUB_TOKEN Kaggle secret (see the setup notes at "
+              "the top of kaggle_run.py). Download assignment3_results.zip instead.")
+        return False
+    m = re.match(r"https://github\.com/(.+?)(?:\.git)?$", repo_url)
+    if not m:
+        print(f"\nNot pushing: --repo must be an https://github.com/... URL, got {repo_url}")
+        return False
+    auth_url = f"https://x-access-token:{token}@github.com/{m.group(1)}.git"
+
+    # where results/ lives inside the repo (e.g. Assignment3/results)
+    rc, top = git(["rev-parse", "--show-toplevel"], code_dir, token, check=False)
+    sub = os.path.relpath(code_dir, top.strip()) if rc == 0 else os.path.basename(code_dir)
+    clone = os.path.join("/tmp" if os.path.isdir("/tmp") else WORKING, "results_push")
+    shutil.rmtree(clone, ignore_errors=True)
+    try:
+        rc, _ = git(["clone", "-q", "--depth", "1", "--branch", branch, auth_url, clone],
+                    WORKING, token, check=False)
+        if rc != 0:                                   # branch does not exist yet
+            git(["clone", "-q", "--depth", "1", auth_url, clone], WORKING, token)
+            git(["checkout", "-q", "-b", branch], clone, token)
+
+        dest = os.path.join(clone, sub, "results")
+        skipped = []
+        for path in glob.glob(os.path.join(code_dir, "results", "**", "*"), recursive=True):
+            rel = os.path.relpath(path, os.path.join(code_dir, "results"))
+            if not os.path.isfile(path):
+                continue
+            if rel.startswith("adapters" + os.sep) and not include_adapters:
+                continue
+            if os.path.getsize(path) > GITHUB_FILE_LIMIT:
+                skipped.append(rel)
+                continue
+            os.makedirs(os.path.dirname(os.path.join(dest, rel)), exist_ok=True)
+            shutil.copy2(path, os.path.join(dest, rel))
+        if os.path.isdir(log_dir):
+            shutil.copytree(log_dir, os.path.join(dest, "kaggle_logs"), dirs_exist_ok=True)
+        if skipped:
+            print(f"Not pushed (over GitHub's 100 MB limit): {skipped}")
+
+        name = os.environ.get("GIT_AUTHOR_NAME", "Kaggle run")
+        email = os.environ.get("GIT_AUTHOR_EMAIL", "kaggle-run@users.noreply.github.com")
+        git(["config", "user.name", name], clone, token)
+        git(["config", "user.email", email], clone, token)
+        git(["add", "-A", os.path.join(sub, "results")], clone, token)
+        rc, _ = git(["diff", "--cached", "--quiet"], clone, token, check=False)
+        if rc == 0:
+            print(f"\nGitHub: results unchanged on branch {branch}; nothing to push")
+            return True
+        stamp = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
+        git(["commit", "-q", "-m", f"Kaggle results{' (quick)' if quick else ''}, {stamp}"],
+            clone, token)
+        git(["push", "-q", "origin", branch], clone, token)
+        print(f"\nPushed results to https://github.com/{m.group(1)}/tree/{branch}/{sub}/results\n"
+              f"On your Mac:  git fetch origin {branch} && "
+              f"git checkout origin/{branch} -- {sub}/results")
+        return True
+    except RuntimeError as err:
+        print(f"\nGitHub push failed: {err}\nCheck that the token has Contents: Read and write "
+              f"on this repository. The zip in /kaggle/working is still there.")
+        return False
+    finally:
+        shutil.rmtree(clone, ignore_errors=True)
 
 
 def gpu_names():
@@ -237,6 +350,10 @@ def main():
     p.add_argument("--gpus", type=int, default=None)
     p.add_argument("--quick", action="store_true")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--push-only", action="store_true")
+    p.add_argument("--push-branch", default="kaggle-results")
+    p.add_argument("--push-adapters", action="store_true")
+    p.add_argument("--no-push", action="store_true")
     args = p.parse_args()
     start = time.time()
 
@@ -246,6 +363,10 @@ def main():
     os.makedirs(results_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
     print(f"Code: {code_dir}\nResults: {results_dir}\nLogs: {log_dir}")
+    if args.push_only:
+        push_results(code_dir, args.repo, args.push_branch, log_dir, args.push_adapters,
+                     args.quick)
+        return
     seed_results(results_dir)
 
     gpus = gpu_names()
@@ -274,6 +395,9 @@ def main():
     archive = shutil.make_archive(os.path.join(WORKING, "assignment3_results"), "zip", results_dir)
     print(f"\nDone in {(time.time() - start) / 60:.0f} min. Results: {results_dir}\n"
           f"Download: {archive} (Output tab, or the version's Output after a commit run)")
+    if not args.no_push:
+        push_results(code_dir, args.repo, args.push_branch, log_dir, args.push_adapters,
+                     args.quick)
 
 
 if __name__ == "__main__":
