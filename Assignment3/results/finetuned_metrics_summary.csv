@@ -1,0 +1,8 @@
+model,n_problems,corpus_bleu,mean_sentence_bleu,median_sentence_bleu,precision_1gram,precision_2gram,precision_3gram,precision_4gram,brevity_penalty,hyp_ref_length_ratio,syntax_validity_pct,syntax_errors,empty_predictions,family,parameters_m,lora_parameters_m,learning_rate,batch_size,epochs,best_val_loss,training_time_s,tuning_time_s,inference_time_s,total_time_s
+Qwen/Qwen2.5-Coder-1.5B-Instruct +LoRA,20,23.43,24.64,24.97,66.13,41.98,29.77,22.52,0.634,0.687,100.0,0,0,pretrained + LoRA (instruct),1543.7,18.46,0.0003,8,1,0.4137,13.4,13.4,13.2,26.6
+deepseek-ai/deepseek-coder-1.3b-base +LoRA,20,22.73,27.08,23.51,79.07,54.24,40.38,31.36,0.471,0.57,100.0,0,0,pretrained + LoRA (base),1346.5,14.99,0.0003,8,1,0.4408,12.2,12.2,8.4,20.6
+Qwen/Qwen2.5-Coder-3B-Instruct +LoRA,20,22.0,25.79,22.83,70.39,44.54,31.72,23.87,0.561,0.633,100.0,0,0,pretrained + LoRA (instruct),3085.9,29.93,0.0003,8,1,0.3834,24.2,24.2,16.2,40.4
+Qwen/Qwen2.5-Coder-1.5B +LoRA,20,21.64,21.79,19.35,53.47,31.85,21.08,14.48,0.806,0.823,95.0,1,0,pretrained + LoRA (base),1543.7,18.46,0.0003,8,1,0.3283,13.4,13.4,49.2,62.6
+deepseek-ai/deepseek-coder-1.3b-instruct +LoRA,20,21.3,23.92,18.3,69.74,43.79,30.99,23.19,0.553,0.628,100.0,0,0,pretrained + LoRA (instruct),1346.5,14.99,0.0003,8,1,0.4303,13.5,13.5,10.0,23.5
+Qwen/Qwen2.5-Coder-3B +LoRA,20,19.18,22.51,20.97,66.76,39.75,27.26,19.94,0.553,0.628,100.0,0,0,pretrained + LoRA (base),3085.9,29.93,0.0003,8,1,0.3291,22.0,22.0,22.4,44.4
+bigcode/starcoder2-3b +LoRA,20,18.71,24.3,22.38,74.54,46.66,34.38,26.19,0.445,0.552,100.0,0,0,pretrained + LoRA (base),3030.4,23.84,0.0003,8,1,0.4856,19.9,19.9,23.2,43.1

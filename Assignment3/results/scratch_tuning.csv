@@ -1,0 +1,7 @@
+experiment,learning_rate,batch_size,epochs,best_val_loss,best_epoch,train_time_s,selected
+encoder_decoder,0.001,16,2,5.2285,2,1.8,False
+encoder_decoder,0.003,16,2,4.7293,2,1.3,True
+decoder_only,0.001,16,2,5.4632,2,2.2,True
+decoder_only,0.003,16,2,5.4656,2,2.1,False
+decoder_only_autoregressive,0.001,16,2,5.1482,2,1.6,False
+decoder_only_autoregressive,0.003,16,2,4.7174,2,1.6,True

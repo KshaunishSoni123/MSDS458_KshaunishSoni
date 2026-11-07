@@ -1,0 +1,8 @@
+model,learning_rate,batch_size,epochs,train_loss,val_loss,run_time_s,best_epoch,best_val_loss,selected
+bigcode/starcoder2-3b,0.0003,8,1,1.9561,0.4856,18.7,1,0.4856,True
+deepseek-ai/deepseek-coder-1.3b-base,0.0003,8,1,0.5675,0.4408,11.2,1,0.4408,True
+Qwen/Qwen2.5-Coder-1.5B,0.0003,8,1,0.6336,0.3283,12.2,1,0.3283,True
+Qwen/Qwen2.5-Coder-3B,0.0003,8,1,0.6032,0.3291,20.4,1,0.3291,True
+deepseek-ai/deepseek-coder-1.3b-instruct,0.0003,8,1,0.7858,0.4303,12.6,1,0.4303,True
+Qwen/Qwen2.5-Coder-1.5B-Instruct,0.0003,8,1,0.7336,0.4137,12.3,1,0.4137,True
+Qwen/Qwen2.5-Coder-3B-Instruct,0.0003,8,1,0.613,0.3834,22.6,1,0.3834,True

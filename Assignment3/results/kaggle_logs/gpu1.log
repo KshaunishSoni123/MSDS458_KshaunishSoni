@@ -1,0 +1,171 @@
+=== START LoRA bigcode/starcoder2-3b ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/374 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 374/374 [00:00<00:00, 3492.95 examples/s]Generating train split: 100%|██████████| 374/374 [00:00<00:00, 3413.27 examples/s]
+Generating test split:   0%|          | 0/500 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 500/500 [00:00<00:00, 127540.72 examples/s]
+Generating validation split:   0%|          | 0/90 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 90/90 [00:00<00:00, 32244.59 examples/s]
+Generating prompt split:   0%|          | 0/10 [00:00<?, ? examples/s]Generating prompt split: 100%|██████████| 10/10 [00:00<00:00, 3760.36 examples/s]
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[bigcode/starcoder2-3b +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/483 [00:00<?, ?it/s]Loading weights:   0%|          | 1/483 [00:01<08:25,  1.05s/it]Loading weights:  18%|█▊        | 85/483 [00:01<00:04, 84.97it/s]Loading weights:  24%|██▍       | 117/483 [00:01<00:03, 106.60it/s]Loading weights:  28%|██▊       | 137/483 [00:01<00:03, 109.32it/s]Loading weights:  34%|███▍      | 165/483 [00:02<00:03, 82.06it/s] Loading weights:  38%|███▊      | 183/483 [00:02<00:03, 93.05it/s]Loading weights:  41%|████      | 198/483 [00:02<00:04, 65.89it/s]Loading weights:  44%|████▍     | 213/483 [00:02<00:03, 73.93it/s]Loading weights:  47%|████▋     | 229/483 [00:03<00:04, 59.45it/s]Loading weights:  51%|█████     | 245/483 [00:03<00:03, 65.39it/s]Loading weights:  54%|█████▍    | 261/483 [00:03<00:03, 59.98it/s]Loading weights:  57%|█████▋    | 277/483 [00:03<00:03, 63.67it/s]Loading weights:  61%|██████    | 293/483 [00:04<00:03, 57.10it/s]Loading weights:  64%|██████▍   | 309/483 [00:04<00:03, 56.52it/s]Loading weights:  67%|██████▋   | 325/483 [00:04<00:02, 60.32it/s]Loading weights:  71%|███████   | 341/483 [00:05<00:02, 50.81it/s]Loading weights:  74%|███████▍  | 357/483 [00:05<00:02, 60.15it/s]Loading weights:  77%|███████▋  | 373/483 [00:05<00:01, 56.84it/s]Loading weights:  81%|████████  | 389/483 [00:05<00:01, 62.40it/s]Loading weights:  87%|████████▋ | 421/483 [00:06<00:00, 77.37it/s]Loading weights:  90%|█████████ | 437/483 [00:06<00:00, 85.54it/s]Loading weights:  94%|█████████▍| 455/483 [00:06<00:00, 87.45it/s]Loading weights: 100%|██████████| 483/483 [00:06<00:00, 72.79it/s]
+
+  [starcoder2-3b] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 23,838,720 || all params: 3,054,210,048 || trainable%: 0.7805
+    epoch 1 step 1/4  loss 3.115  (3s)
+  epoch 1/1  train 1.956  val 0.486  (19s)
+
+  [starcoder2-3b] selected lr 0.0003, batch 8, epochs 1 (val loss 0.486)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer GPT2Tokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  8/20 generated (3s)
+  16/20 generated (10s)
+  20/20 generated (13s)
+[bigcode/starcoder2-3b +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_starcoder2-3b-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                       model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+bigcode/starcoder2-3b +LoRA         0.0003           8       1        18.71                100.0           19.9              23.2
+=== END LoRA bigcode/starcoder2-3b (exit 0) ===
+=== START LoRA Qwen/Qwen2.5-Coder-3B ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[Qwen/Qwen2.5-Coder-3B +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:34<00:34, 34.04s/it]Fetching 2 files: 100%|██████████| 2/2 [00:36<00:00, 15.18s/it]Fetching 2 files: 100%|██████████| 2/2 [00:36<00:00, 18.01s/it]
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:06<44:22,  6.15s/it]Loading weights:  42%|████▏     | 183/434 [00:06<00:06, 37.43it/s]Loading weights:  47%|████▋     | 202/434 [00:07<00:06, 35.97it/s]Loading weights:  49%|████▉     | 214/434 [00:08<00:06, 32.94it/s]Loading weights:  51%|█████     | 222/434 [00:08<00:07, 29.63it/s]Loading weights:  53%|█████▎    | 231/434 [00:08<00:07, 28.21it/s]Loading weights:  54%|█████▍    | 236/434 [00:09<00:07, 26.51it/s]Loading weights:  56%|█████▌    | 243/434 [00:09<00:07, 25.19it/s]Loading weights:  57%|█████▋    | 246/434 [00:09<00:08, 21.92it/s]Loading weights:  59%|█████▉    | 255/434 [00:10<00:08, 22.28it/s]Loading weights:  62%|██████▏   | 267/434 [00:10<00:07, 22.30it/s]Loading weights:  62%|██████▏   | 270/434 [00:11<00:07, 21.29it/s]Loading weights:  64%|██████▍   | 279/434 [00:11<00:06, 22.45it/s]Loading weights:  65%|██████▍   | 282/434 [00:11<00:08, 18.34it/s]Loading weights:  67%|██████▋   | 291/434 [00:12<00:06, 20.45it/s]Loading weights:  70%|██████▉   | 303/434 [00:12<00:06, 19.04it/s]Loading weights:  73%|███████▎  | 315/434 [00:13<00:05, 21.36it/s]Loading weights:  73%|███████▎  | 318/434 [00:13<00:06, 19.07it/s]Loading weights:  75%|███████▌  | 327/434 [00:13<00:05, 21.04it/s]Loading weights:  76%|███████▌  | 330/434 [00:14<00:05, 20.12it/s]Loading weights:  78%|███████▊  | 339/434 [00:14<00:04, 19.86it/s]Loading weights:  79%|███████▊  | 341/434 [00:14<00:05, 17.37it/s]Loading weights:  81%|████████  | 351/434 [00:15<00:03, 22.47it/s]Loading weights:  82%|████████▏ | 354/434 [00:15<00:04, 18.75it/s]Loading weights:  84%|████████▎ | 363/434 [00:15<00:03, 21.37it/s]Loading weights:  84%|████████▍ | 366/434 [00:16<00:03, 17.00it/s]Loading weights:  86%|████████▋ | 375/434 [00:16<00:03, 19.07it/s]Loading weights:  87%|████████▋ | 377/434 [00:16<00:03, 18.74it/s]Loading weights:  89%|████████▉ | 387/434 [00:17<00:02, 19.29it/s]Loading weights:  90%|████████▉ | 389/434 [00:17<00:02, 17.92it/s]Loading weights:  92%|█████████▏| 399/434 [00:17<00:01, 21.01it/s]Loading weights:  92%|█████████▏| 401/434 [00:17<00:01, 19.39it/s]Loading weights:  95%|█████████▍| 411/434 [00:18<00:01, 18.98it/s]Loading weights:  97%|█████████▋| 423/434 [00:18<00:00, 21.28it/s]Loading weights: 100%|██████████| 434/434 [00:18<00:00, 22.99it/s]
+
+  [Qwen2.5-Coder-3B] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 29,933,568 || all params: 3,115,872,256 || trainable%: 0.9607
+    epoch 1 step 1/4  loss 0.861  (4s)
+  epoch 1/1  train 0.603  val 0.329  (20s)
+
+  [Qwen2.5-Coder-3B] selected lr 0.0003, batch 8, epochs 1 (val loss 0.329)
+  8/20 generated (10s)
+  16/20 generated (15s)
+  20/20 generated (20s)
+[Qwen/Qwen2.5-Coder-3B +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                       model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+Qwen/Qwen2.5-Coder-3B +LoRA         0.0003           8       1        19.18                100.0           22.0              22.4
+=== END LoRA Qwen/Qwen2.5-Coder-3B (exit 0) ===
+=== START LoRA Qwen/Qwen2.5-Coder-1.5B ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[Qwen/Qwen2.5-Coder-1.5B +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   0%|          | 1/338 [00:00<05:21,  1.05it/s]Loading weights:  44%|████▍     | 148/338 [00:01<00:00, 190.91it/s]Loading weights:  68%|██████▊   | 230/338 [00:01<00:00, 194.68it/s]Loading weights:  84%|████████▍ | 284/338 [00:01<00:00, 190.17it/s]Loading weights:  96%|█████████▌| 324/338 [00:01<00:00, 198.22it/s]Loading weights: 100%|██████████| 338/338 [00:01<00:00, 170.02it/s]
+
+  [Qwen2.5-Coder-1.5B] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 18,464,768 || all params: 1,562,179,072 || trainable%: 1.1820
+    epoch 1 step 1/4  loss 0.995  (3s)
+  epoch 1/1  train 0.634  val 0.328  (12s)
+
+  [Qwen2.5-Coder-1.5B] selected lr 0.0003, batch 8, epochs 1 (val loss 0.328)
+  8/20 generated (38s)
+  16/20 generated (45s)
+  20/20 generated (49s)
+[Qwen/Qwen2.5-Coder-1.5B +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                         model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+Qwen/Qwen2.5-Coder-1.5B +LoRA         0.0003           8       1        21.64                 95.0           13.4              49.2
+=== END LoRA Qwen/Qwen2.5-Coder-1.5B (exit 0) ===
+=== START LoRA deepseek-ai/deepseek-coder-1.3b-base ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[deepseek-ai/deepseek-coder-1.3b-base +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s]Loading weights:   1%|          | 2/219 [00:00<00:15, 14.11it/s]Loading weights:  15%|█▌        | 33/219 [00:00<00:01, 149.96it/s]Loading weights:  23%|██▎       | 50/219 [00:00<00:01, 143.42it/s]Loading weights:  30%|██▉       | 65/219 [00:00<00:01, 87.17it/s] Loading weights:  35%|███▌      | 77/219 [00:01<00:03, 40.42it/s]Loading weights:  39%|███▉      | 85/219 [00:01<00:03, 34.70it/s]Loading weights:  42%|████▏     | 91/219 [00:01<00:03, 36.75it/s]Loading weights:  44%|████▍     | 97/219 [00:02<00:04, 29.22it/s]Loading weights:  52%|█████▏    | 114/219 [00:02<00:02, 46.39it/s]Loading weights:  59%|█████▉    | 130/219 [00:02<00:01, 63.22it/s]Loading weights:  68%|██████▊   | 148/219 [00:02<00:00, 80.82it/s]Loading weights:  76%|███████▌  | 166/219 [00:02<00:00, 98.52it/s]Loading weights:  84%|████████▍ | 184/219 [00:02<00:00, 109.60it/s]Loading weights:  92%|█████████▏| 202/219 [00:02<00:00, 124.40it/s]Loading weights: 100%|██████████| 219/219 [00:02<00:00, 73.91it/s] 
+
+  [deepseek-coder-1.3b-base] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 14,991,360 || all params: 1,361,463,296 || trainable%: 1.1011
+    epoch 1 step 1/4  loss 0.747  (2s)
+  epoch 1/1  train 0.567  val 0.441  (11s)
+
+  [deepseek-coder-1.3b-base] selected lr 0.0003, batch 8, epochs 1 (val loss 0.441)
+  8/20 generated (3s)
+  16/20 generated (7s)
+  20/20 generated (8s)
+[deepseek-ai/deepseek-coder-1.3b-base +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-base-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                                      model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+deepseek-ai/deepseek-coder-1.3b-base +LoRA         0.0003           8       1        22.73                100.0           12.2               8.4
+=== END LoRA deepseek-ai/deepseek-coder-1.3b-base (exit 0) ===
+=== START from-scratch grid search ===
+Device: cuda
+Model: {'d_model': 128, 'heads': 4, 'ff_mult': 4, 'dropout': 0.1}
+Training: {'epochs': 40, 'batch_size': 16, 'learning_rate': 0.001, 'warmup_ratio': 0.1, 'max_src_len': 192, 'max_tgt_len': 192, 'seed': 42}
+Tuning grid: {'learning_rate': [0.001, 0.003], 'batch_size': [16], 'epochs': [2]}
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+
+
+
+Tokenizer: 2000 tokens. Train prompts truncated: 9.9%, code truncated: 2.3%
+
+=== encoder_decoder ===
+
+  [encoder_decoder] run 1/2: lr 0.001, batch 16, epochs 2
+  epoch  1/2  train 6.390  val 5.474  *best  (1.2s)
+  epoch  2/2  train 5.208  val 5.229  *best  (0.6s)
+  restored weights from epoch 2 (val loss 5.229)
+
+  [encoder_decoder] run 2/2: lr 0.003, batch 16, epochs 2
+  epoch  1/2  train 5.832  val 5.067  *best  (0.6s)
+  epoch  2/2  train 4.658  val 4.729  *best  (0.7s)
+  restored weights from epoch 2 (val loss 4.729)
+
+  [encoder_decoder] selected lr 0.003, batch 16, epochs 2 (val loss 4.729; 2 runs, 3s)
+  1.49M parameters
+  corpus BLEU 2.32  syntax validity 0.0%  (tuning 3s, generation 1s)
+
+=== decoder_only ===
+
+  [decoder_only] run 1/2: lr 0.001, batch 16, epochs 2
+  epoch  1/2  train 6.353  val 5.545  *best  (1.1s)
+  epoch  2/2  train 5.420  val 5.463  *best  (1.1s)
+  restored weights from epoch 2 (val loss 5.463)
+
+  [decoder_only] run 2/2: lr 0.003, batch 16, epochs 2
+  epoch  1/2  train 5.913  val 5.486  *best  (1.1s)
+  epoch  2/2  train 5.374  val 5.466  *best  (1.1s)
+  restored weights from epoch 2 (val loss 5.466)
+
+  [decoder_only] selected lr 0.001, batch 16, epochs 2 (val loss 5.463; 2 runs, 4s)
+  1.36M parameters
+  corpus BLEU 0.05  syntax validity 0.0%  (tuning 4s, generation 0s)
+
+=== decoder_only_autoregressive ===
+
+  [decoder_only_autoregressive] run 1/2: lr 0.001, batch 16, epochs 2
+  epoch  1/2  train 6.353  val 5.415  *best  (0.8s)
+  epoch  2/2  train 5.132  val 5.148  *best  (0.8s)
+  restored weights from epoch 2 (val loss 5.148)
+
+  [decoder_only_autoregressive] run 2/2: lr 0.003, batch 16, epochs 2
+  epoch  1/2  train 5.927  val 4.991  *best  (0.8s)
+  epoch  2/2  train 4.603  val 4.717  *best  (0.8s)
+  restored weights from epoch 2 (val loss 4.717)
+
+  [decoder_only_autoregressive] selected lr 0.003, batch 16, epochs 2 (val loss 4.717; 2 runs, 3s)
+  1.36M parameters
+  corpus BLEU 2.00  syntax validity 0.0%  (tuning 3s, generation 12s)
+
+Hyperparameter search (best validation loss per run):
+                  experiment  learning_rate  batch_size  epochs  best_val_loss  best_epoch  train_time_s  selected
+            encoder_decoder          0.001          16       2         5.2285           2           1.8     False
+            encoder_decoder          0.003          16       2         4.7293           2           1.3      True
+               decoder_only          0.001          16       2         5.4632           2           2.2      True
+               decoder_only          0.003          16       2         5.4656           2           2.1     False
+decoder_only_autoregressive          0.001          16       2         5.1482           2           1.6     False
+decoder_only_autoregressive          0.003          16       2         4.7174           2           1.6      True
+
+From-scratch transformers:
+                       model  parameters_m  learning_rate  batch_size  epochs  corpus_bleu  mean_sentence_bleu  syntax_validity_pct  tuning_time_s  inference_time_s  total_time_s
+            encoder_decoder          1.49          0.003          16       2         2.32                2.39                  0.0            3.3               0.9           4.3
+               decoder_only          1.36          0.001          16       2         0.05                0.26                  0.0            4.3               0.0           4.4
+decoder_only_autoregressive          1.36          0.003          16       2         2.00                2.20                  0.0            3.2              11.6          14.8
+
+Results written to /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results
+=== END from-scratch grid search (exit 0) ===

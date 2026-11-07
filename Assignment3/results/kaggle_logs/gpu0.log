@@ -1,0 +1,196 @@
+=== START few-shot (7 to generate) ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+Evaluating on 20 problems from 'test'. Example prompt:
+
+You are an expert Python programmer, and here is your task: Write a function to find the minimum cost path to reach (m, n) from (0, 0) for the given cost matrix cost[][] and a position (m, n) in cost[][]. Your code should pass these tests:
+
+assert min_cost([[1, 2, 3], [4, 8, 2], [1, 5, 3]], 2, 2) == 8
+assert min_cost([[2, 3, 4], [5, 9, 3], [2, 6, 4]], 2, 2) == 12
+assert min_cost([[3, 4, 5], [6, 10, 4], [3, 7, 5]], 2, 2) == 16
+[BEGIN]
+R = 3
+C = 3
+def min_cost(cost, m, n):
+    tc = [[0 for x in range(C)] for x in range(R)]
+    tc[0][0] = cost[0][0]
+    for i in range(1, m+1):
+        tc[i][0] = tc[i-1][0] + cost[i][0]
+    for j in range(1, n+1):
+        tc[0][j] = tc[0][j-1] + cost[0][j]
+    for i in range(1, m+1):
+        for j in range(1, n+1):
+            tc[i][j] = min(tc[i-1][j-1], tc[i-1][j], tc[i][j-1]) + cost[i][j]
+    return tc[m][n]
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:
+
+assert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)
+assert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)
+assert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)
+[BEGIN]
+def similar_elements(test_tup1, test_tup2):
+  res = tuple(set(test_tup1) & set(test_tup2))
+  return (res)
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:
+
+assert is_not_prime(2) == False
+assert is_not_prime(10) == True
+assert is_not_prime(35) == True
+[BEGIN]
+import math
+def is_not_prime(n):
+    result = False
+    for i in range(2,int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            result = True
+    return result
+[DONE]
+
+You are an expert Python programmer, and here is your task: Write a python function to remove first and last occurrence of a given character from the string. Your code should pass these tests:
+
+assert remove_Occ("hello","l") == "heo"
+assert remove_Occ("abcda","a") == "bcd"
+assert remove_Occ("PHP","P") == "H"
+[BEGIN]
+
+[bigcode/starcoder2-3b] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~5.6 GiB
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/483 [00:00<?, ?it/s]Loading weights:   0%|          | 1/483 [00:00<03:57,  2.03it/s]Loading weights:  11%|█▏        | 55/483 [00:00<00:06, 70.32it/s]Loading weights:  18%|█▊        | 87/483 [00:01<00:05, 76.24it/s]Loading weights:  21%|██        | 101/483 [00:01<00:04, 82.89it/s]Loading weights:  24%|██▍       | 117/483 [00:01<00:03, 94.81it/s]Loading weights:  27%|██▋       | 129/483 [00:01<00:04, 81.63it/s]Loading weights:  29%|██▉       | 139/483 [00:01<00:04, 74.20it/s]Loading weights:  31%|███       | 149/483 [00:02<00:04, 68.78it/s]Loading weights:  34%|███▍      | 165/483 [00:02<00:04, 70.55it/s]Loading weights:  36%|███▌      | 173/483 [00:02<00:04, 70.65it/s]Loading weights:  41%|████      | 197/483 [00:02<00:04, 64.94it/s]Loading weights:  47%|████▋     | 229/483 [00:03<00:03, 72.26it/s]Loading weights:  51%|█████     | 245/483 [00:03<00:03, 77.80it/s]Loading weights:  54%|█████▍    | 261/483 [00:03<00:03, 58.46it/s]Loading weights:  61%|██████    | 293/483 [00:04<00:03, 61.10it/s]Loading weights:  64%|██████▍   | 309/483 [00:04<00:02, 70.63it/s]Loading weights:  67%|██████▋   | 325/483 [00:04<00:02, 54.58it/s]Loading weights:  74%|███████▍  | 357/483 [00:05<00:01, 65.76it/s]Loading weights:  77%|███████▋  | 373/483 [00:05<00:01, 74.46it/s]Loading weights:  81%|████████  | 389/483 [00:05<00:01, 70.69it/s]Loading weights:  87%|████████▋ | 421/483 [00:05<00:00, 92.39it/s]Loading weights:  94%|█████████▍| 453/483 [00:06<00:00, 102.86it/s]Loading weights: 100%|██████████| 483/483 [00:06<00:00, 78.28it/s] 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer GPT2Tokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  8/20 generated (9s)
+  16/20 generated (16s)
+  20/20 generated (22s)
+[bigcode/starcoder2-3b] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_starcoder2-3b_test20.jsonl
+[deepseek-ai/deepseek-coder-1.3b-base] loading model
+  1 GPU(s)
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s]Loading weights:   0%|          | 1/219 [00:00<00:53,  4.05it/s]Loading weights:  14%|█▍        | 31/219 [00:00<00:01, 112.35it/s]Loading weights:  22%|██▏       | 49/219 [00:00<00:01, 133.38it/s]Loading weights:  32%|███▏      | 69/219 [00:00<00:00, 152.23it/s]Loading weights:  40%|████      | 88/219 [00:00<00:00, 142.67it/s]Loading weights:  50%|█████     | 110/219 [00:00<00:00, 162.82it/s]Loading weights:  58%|█████▊    | 128/219 [00:00<00:00, 166.66it/s]Loading weights:  68%|██████▊   | 148/219 [00:01<00:00, 165.71it/s]Loading weights:  76%|███████▋  | 167/219 [00:01<00:00, 169.88it/s]Loading weights:  84%|████████▍ | 185/219 [00:01<00:00, 170.97it/s]Loading weights:  95%|█████████▌| 209/219 [00:01<00:00, 187.76it/s]Loading weights: 100%|██████████| 219/219 [00:01<00:00, 157.40it/s]
+  8/20 generated (9s)
+  16/20 generated (14s)
+  20/20 generated (18s)
+[deepseek-ai/deepseek-coder-1.3b-base] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-base_test20.jsonl
+[Qwen/Qwen2.5-Coder-1.5B] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~2.9 GiB
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   0%|          | 1/338 [00:00<04:20,  1.29it/s]Loading weights:  41%|████      | 137/338 [00:00<00:00, 212.85it/s]Loading weights:  64%|██████▍   | 217/338 [00:01<00:00, 246.43it/s]Loading weights:  81%|████████▏ | 275/338 [00:01<00:00, 255.18it/s]Loading weights:  95%|█████████▍| 321/338 [00:01<00:00, 253.13it/s]Loading weights: 100%|██████████| 338/338 [00:01<00:00, 213.65it/s]
+  8/20 generated (6s)
+  16/20 generated (18s)
+  20/20 generated (33s)
+[Qwen/Qwen2.5-Coder-1.5B] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B_test20.jsonl
+[Qwen/Qwen2.5-Coder-3B] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~5.7 GiB
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:04<29:28,  4.08s/it]Loading weights:  42%|████▏     | 183/434 [00:04<00:04, 56.49it/s]Loading weights:  49%|████▉     | 212/434 [00:05<00:05, 44.11it/s]Loading weights:  53%|█████▎    | 229/434 [00:06<00:04, 41.80it/s]Loading weights:  56%|█████▌    | 241/434 [00:07<00:05, 35.41it/s]Loading weights:  57%|█████▋    | 249/434 [00:07<00:06, 29.45it/s]Loading weights:  59%|█████▉    | 255/434 [00:08<00:06, 26.99it/s]Loading weights:  62%|██████▏   | 267/434 [00:08<00:06, 25.87it/s]Loading weights:  62%|██████▏   | 271/434 [00:08<00:06, 25.29it/s]Loading weights:  64%|██████▍   | 279/434 [00:09<00:06, 24.58it/s]Loading weights:  65%|██████▍   | 282/434 [00:09<00:07, 20.41it/s]Loading weights:  67%|██████▋   | 291/434 [00:09<00:06, 21.83it/s]Loading weights:  70%|██████▉   | 303/434 [00:10<00:06, 19.93it/s]Loading weights:  73%|███████▎  | 315/434 [00:11<00:05, 21.94it/s]Loading weights:  73%|███████▎  | 318/434 [00:11<00:05, 19.58it/s]Loading weights:  75%|███████▌  | 327/434 [00:11<00:05, 21.32it/s]Loading weights:  76%|███████▌  | 330/434 [00:11<00:05, 20.45it/s]Loading weights:  78%|███████▊  | 339/434 [00:12<00:04, 19.98it/s]Loading weights:  79%|███████▊  | 341/434 [00:12<00:05, 17.50it/s]Loading weights:  81%|████████  | 351/434 [00:12<00:03, 22.62it/s]Loading weights:  82%|████████▏ | 354/434 [00:13<00:04, 18.77it/s]Loading weights:  84%|████████▎ | 363/434 [00:13<00:03, 21.37it/s]Loading weights:  84%|████████▍ | 366/434 [00:13<00:03, 17.05it/s]Loading weights:  86%|████████▋ | 375/434 [00:14<00:03, 19.09it/s]Loading weights:  87%|████████▋ | 377/434 [00:14<00:03, 18.73it/s]Loading weights:  89%|████████▉ | 387/434 [00:14<00:02, 19.33it/s]Loading weights:  90%|████████▉ | 389/434 [00:14<00:02, 17.94it/s]Loading weights:  92%|█████████▏| 399/434 [00:15<00:01, 20.89it/s]Loading weights:  92%|█████████▏| 401/434 [00:15<00:01, 19.47it/s]Loading weights:  95%|█████████▍| 411/434 [00:16<00:01, 19.06it/s]Loading weights:  97%|█████████▋| 423/434 [00:16<00:00, 21.14it/s]Loading weights: 100%|██████████| 434/434 [00:16<00:00, 26.11it/s]
+  8/20 generated (9s)
+  16/20 generated (18s)
+  20/20 generated (24s)
+[Qwen/Qwen2.5-Coder-3B] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B_test20.jsonl
+[deepseek-ai/deepseek-coder-1.3b-instruct] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~2.5 GiB
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s]Loading weights:   0%|          | 1/219 [00:00<00:59,  3.67it/s]Loading weights:  18%|█▊        | 40/219 [00:00<00:01, 126.53it/s]Loading weights:  27%|██▋       | 59/219 [00:00<00:01, 142.56it/s]Loading weights:  36%|███▌      | 78/219 [00:00<00:00, 152.33it/s]Loading weights:  44%|████▍     | 96/219 [00:00<00:00, 158.13it/s]Loading weights:  55%|█████▌    | 121/219 [00:00<00:00, 174.32it/s]Loading weights:  64%|██████▍   | 140/219 [00:00<00:00, 173.21it/s]Loading weights:  74%|███████▍  | 162/219 [00:01<00:00, 182.01it/s]Loading weights:  83%|████████▎ | 181/219 [00:01<00:00, 182.41it/s]Loading weights:  92%|█████████▏| 202/219 [00:01<00:00, 178.08it/s]Loading weights: 100%|██████████| 219/219 [00:01<00:00, 160.80it/s]
+  8/20 generated (6s)
+  16/20 generated (13s)
+  20/20 generated (19s)
+[deepseek-ai/deepseek-coder-1.3b-instruct] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-instruct_test20.jsonl
+[Qwen/Qwen2.5-Coder-1.5B-Instruct] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~2.9 GiB
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   0%|          | 1/338 [00:01<05:48,  1.03s/it]Loading weights:  51%|█████     | 171/338 [00:01<00:00, 196.56it/s]Loading weights:  71%|███████   | 240/338 [00:01<00:00, 212.65it/s]Loading weights:  86%|████████▌ | 289/338 [00:01<00:00, 208.38it/s]Loading weights:  97%|█████████▋| 327/338 [00:01<00:00, 190.21it/s]Loading weights: 100%|██████████| 338/338 [00:01<00:00, 170.01it/s]
+  8/20 generated (7s)
+  16/20 generated (12s)
+  20/20 generated (16s)
+[Qwen/Qwen2.5-Coder-1.5B-Instruct] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B-Instruct_test20.jsonl
+[Qwen/Qwen2.5-Coder-3B-Instruct] loading model
+  1 GPU(s): 14.6 GiB; fp16 weights ~5.7 GiB
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:20<00:20, 20.99s/it]Fetching 2 files: 100%|██████████| 2/2 [00:38<00:00, 18.90s/it]Fetching 2 files: 100%|██████████| 2/2 [00:38<00:00, 19.21s/it]
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:03<24:01,  3.33s/it]Loading weights:  45%|████▍     | 195/434 [00:03<00:03, 78.09it/s]Loading weights:  61%|██████    | 265/434 [00:03<00:01, 94.79it/s]Loading weights:  72%|███████▏  | 311/434 [00:04<00:01, 99.66it/s]Loading weights:  79%|███████▉  | 344/434 [00:05<00:01, 76.23it/s]Loading weights:  84%|████████▍ | 366/434 [00:06<00:01, 49.07it/s]Loading weights:  88%|████████▊ | 382/434 [00:06<00:01, 48.48it/s]Loading weights:  91%|█████████ | 394/434 [00:07<00:00, 40.06it/s]Loading weights:  93%|█████████▎| 403/434 [00:08<00:00, 33.79it/s]Loading weights:  95%|█████████▍| 411/434 [00:08<00:00, 32.45it/s]Loading weights:  97%|█████████▋| 423/434 [00:08<00:00, 31.42it/s]Loading weights: 100%|██████████| 434/434 [00:08<00:00, 49.34it/s]
+  8/20 generated (9s)
+  16/20 generated (17s)
+  20/20 generated (22s)
+[Qwen/Qwen2.5-Coder-3B-Instruct] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B-Instruct_test20.jsonl
+(using saved fine-tuned results from /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/finetuned_metrics_summary.csv)
+(using saved from-scratch results from /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/scratch_metrics_summary.csv)
+
+Model comparison (times in seconds):
+                                    model                   family  parameters_m  learning_rate  batch_size  epochs  n_problems  corpus_bleu  mean_sentence_bleu  syntax_validity_pct  training_time_s  tuning_time_s  inference_time_s  total_time_s
+                   Qwen/Qwen2.5-Coder-3B        pretrained (base)       3085.90            NaN         NaN     NaN          20        25.62               27.15                100.0              0.0            NaN              24.2          43.7
+deepseek-ai/deepseek-coder-1.3b-instruct    pretrained (instruct)       1346.50            NaN         NaN     NaN          20        23.64               22.71                100.0              0.0            NaN              19.4          44.8
+          Qwen/Qwen2.5-Coder-3B-Instruct    pretrained (instruct)       3085.90            NaN         NaN     NaN          20        23.60               26.05                100.0              0.0            NaN              21.9          74.5
+                   bigcode/starcoder2-3b        pretrained (base)       3030.40            NaN         NaN     NaN          20        22.87               24.20                100.0              0.0            NaN              21.8          94.8
+                 Qwen/Qwen2.5-Coder-1.5B        pretrained (base)       1543.70            NaN         NaN     NaN          20        21.97               24.67                100.0              0.0            NaN              33.3          64.4
+           Qwen/Qwen2.5-Coder-1.5B +LoRA pretrained + LoRA (base)       1543.70         0.0003         8.0     1.0          20        21.64               21.79                 95.0             13.4           13.4              49.2          62.6
+        Qwen/Qwen2.5-Coder-1.5B-Instruct    pretrained (instruct)       1543.70            NaN         NaN     NaN          20        20.63               25.86                100.0              0.0            NaN              16.0          43.9
+    deepseek-ai/deepseek-coder-1.3b-base        pretrained (base)       1346.50            NaN         NaN     NaN          20        17.83               17.97                100.0              0.0            NaN              18.0          44.3
+                         encoder_decoder             from scratch          1.49            NaN         NaN     NaN         500        11.08               10.38                 14.8             40.2            NaN               8.0          48.2
+             decoder_only_autoregressive             from scratch          1.36            NaN         NaN     NaN         500         6.82                6.73                 25.8             64.5            NaN              26.8          91.4
+                            decoder_only             from scratch          1.36            NaN         NaN     NaN         500         0.37                1.60                  0.2             84.3            NaN               0.5          84.9
+
+Results written to /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results  (run took 431s)
+=== END few-shot (7 to generate) (exit 0) ===
+=== START LoRA Qwen/Qwen2.5-Coder-3B-Instruct ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[Qwen/Qwen2.5-Coder-3B-Instruct +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]Loading weights:   0%|          | 1/434 [00:01<07:38,  1.06s/it]Loading weights:  26%|██▌       | 111/434 [00:01<00:02, 126.45it/s]Loading weights:  37%|███▋      | 160/434 [00:01<00:02, 124.43it/s]Loading weights:  44%|████▍     | 192/434 [00:01<00:01, 130.46it/s]Loading weights:  50%|█████     | 218/434 [00:02<00:01, 123.82it/s]Loading weights:  55%|█████▍    | 238/434 [00:02<00:01, 120.56it/s]Loading weights:  59%|█████▉    | 255/434 [00:02<00:01, 111.34it/s]Loading weights:  62%|██████▏   | 270/434 [00:02<00:01, 111.77it/s]Loading weights:  65%|██████▌   | 284/434 [00:02<00:01, 110.68it/s]Loading weights:  68%|██████▊   | 297/434 [00:02<00:01, 113.95it/s]Loading weights:  73%|███████▎  | 315/434 [00:02<00:01, 109.00it/s]Loading weights:  76%|███████▌  | 328/434 [00:03<00:01, 103.10it/s]Loading weights:  79%|███████▊  | 341/434 [00:03<00:00, 102.49it/s]Loading weights:  84%|████████▍ | 364/434 [00:03<00:00, 112.88it/s]Loading weights:  87%|████████▋ | 377/434 [00:03<00:00, 111.63it/s]Loading weights:  92%|█████████▏| 399/434 [00:03<00:00, 120.17it/s]Loading weights:  95%|█████████▍| 412/434 [00:03<00:00, 111.42it/s]Loading weights: 100%|██████████| 434/434 [00:03<00:00, 110.45it/s]
+
+  [Qwen2.5-Coder-3B-Instruct] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 29,933,568 || all params: 3,115,872,256 || trainable%: 0.9607
+    epoch 1 step 1/4  loss 1.133  (4s)
+  epoch 1/1  train 0.613  val 0.383  (22s)
+
+  [Qwen2.5-Coder-3B-Instruct] selected lr 0.0003, batch 8, epochs 1 (val loss 0.383)
+  8/20 generated (6s)
+  16/20 generated (11s)
+  20/20 generated (16s)
+[Qwen/Qwen2.5-Coder-3B-Instruct +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-3B-Instruct-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                                model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+Qwen/Qwen2.5-Coder-3B-Instruct +LoRA         0.0003           8       1         22.0                100.0           24.2              16.2
+=== END LoRA Qwen/Qwen2.5-Coder-3B-Instruct (exit 0) ===
+=== START LoRA Qwen/Qwen2.5-Coder-1.5B-Instruct ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[Qwen/Qwen2.5-Coder-1.5B-Instruct +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   0%|          | 1/338 [00:05<32:38,  5.81s/it]Loading weights:  54%|█████▍    | 183/338 [00:06<00:03, 41.28it/s]Loading weights:  63%|██████▎   | 213/338 [00:06<00:02, 44.12it/s]Loading weights:  72%|███████▏  | 243/338 [00:06<00:01, 53.57it/s]Loading weights:  79%|███████▉  | 268/338 [00:06<00:01, 63.58it/s]Loading weights:  86%|████████▌ | 291/338 [00:07<00:00, 67.55it/s]Loading weights:  97%|█████████▋| 327/338 [00:07<00:00, 91.13it/s]Loading weights: 100%|██████████| 338/338 [00:07<00:00, 46.68it/s]
+
+  [Qwen2.5-Coder-1.5B-Instruct] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 18,464,768 || all params: 1,562,179,072 || trainable%: 1.1820
+    epoch 1 step 1/4  loss 1.171  (2s)
+  epoch 1/1  train 0.734  val 0.414  (12s)
+
+  [Qwen2.5-Coder-1.5B-Instruct] selected lr 0.0003, batch 8, epochs 1 (val loss 0.414)
+  8/20 generated (5s)
+  16/20 generated (9s)
+  20/20 generated (13s)
+[Qwen/Qwen2.5-Coder-1.5B-Instruct +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_Qwen2.5-Coder-1.5B-Instruct-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                                  model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+Qwen/Qwen2.5-Coder-1.5B-Instruct +LoRA         0.0003           8       1        23.43                100.0           13.4              13.2
+=== END LoRA Qwen/Qwen2.5-Coder-1.5B-Instruct (exit 0) ===
+=== START LoRA deepseek-ai/deepseek-coder-1.3b-instruct ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+MBPP splits: {'train': 374, 'test': 500, 'validation': 90, 'prompt': 10}
+[deepseek-ai/deepseek-coder-1.3b-instruct +LoRA] tuning on cuda: grid {'learning_rate': [0.0003], 'batch_size': [8], 'epochs': [1]}
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s]Loading weights:   0%|          | 1/219 [00:00<00:48,  4.46it/s]Loading weights:  18%|█▊        | 40/219 [00:00<00:01, 139.64it/s]Loading weights:  27%|██▋       | 59/219 [00:00<00:01, 150.05it/s]Loading weights:  35%|███▌      | 77/219 [00:00<00:00, 156.83it/s]Loading weights:  43%|████▎     | 95/219 [00:00<00:00, 161.38it/s]Loading weights:  52%|█████▏    | 113/219 [00:00<00:00, 158.93it/s]Loading weights:  59%|█████▉    | 130/219 [00:00<00:00, 162.13it/s]Loading weights:  68%|██████▊   | 148/219 [00:00<00:00, 166.33it/s]Loading weights:  76%|███████▌  | 166/219 [00:01<00:00, 161.44it/s]Loading weights:  84%|████████▍ | 184/219 [00:01<00:00, 161.78it/s]Loading weights:  92%|█████████▏| 202/219 [00:01<00:00, 164.05it/s]Loading weights: 100%|██████████| 219/219 [00:01<00:00, 156.66it/s]
+
+  [deepseek-coder-1.3b-instruct] run 1/1: lr 0.0003, batch 8, up to 1 epochs
+trainable params: 14,991,360 || all params: 1,361,463,296 || trainable%: 1.1011
+    epoch 1 step 1/4  loss 1.244  (2s)
+  epoch 1/1  train 0.786  val 0.430  (12s)
+
+  [deepseek-coder-1.3b-instruct] selected lr 0.0003, batch 8, epochs 1 (val loss 0.430)
+  8/20 generated (4s)
+  16/20 generated (7s)
+  20/20 generated (10s)
+[deepseek-ai/deepseek-coder-1.3b-instruct +LoRA] saved 20 generations -> /kaggle/working/MSDS458_KshaunishSoni/Assignment3/results/generations_deepseek-coder-1.3b-instruct-LoRA_test20.jsonl
+
+LoRA fine-tuned models:
+                                          model  learning_rate  batch_size  epochs  corpus_bleu  syntax_validity_pct  tuning_time_s  inference_time_s
+deepseek-ai/deepseek-coder-1.3b-instruct +LoRA         0.0003           8       1         21.3                100.0           13.5              10.0
+=== END LoRA deepseek-ai/deepseek-coder-1.3b-instruct (exit 0) ===

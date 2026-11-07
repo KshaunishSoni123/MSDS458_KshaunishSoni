@@ -1,0 +1,1 @@
+{"parameters_m": 1346.5, "lora_parameters_m": 14.99, "learning_rate": 0.0003, "batch_size": 8, "epochs": 1, "best_val_loss": 0.4408, "tuning_time_s": 12.2, "inference_time_s": 8.4}
